@@ -25,9 +25,10 @@
       "@hooks/*": ["src/hooks/*"],
       "@models/*": ["src/models/*"],
       "@gistspages/*": ["src/gistspages/*"],
-      "@lib/*": ["src/lib/*"]
+      "@lib/*": ["src/lib/*"],
+      "@app/*": ["src/app/*"],
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts","types/**/*.d.ts"],
   "exclude": ["node_modules"]
 }
