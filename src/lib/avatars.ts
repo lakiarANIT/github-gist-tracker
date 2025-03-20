@@ -1,0 +1,26 @@
+// /lib/avatars.ts
+export const defaultAvatars = [
+    "https://robohash.org/user1.png",
+    "https://robohash.org/user2.png",
+    "https://robohash.org/user3.png",
+    "https://robohash.org/user4.png",
+    "https://robohash.org/user5.png",
+    "https://robohash.org/user6.png",
+    "https://robohash.org/user7.png",
+    "https://robohash.org/user8.png",
+    "https://robohash.org/user9.png",
+    "https://robohash.org/user10.png",
+    "https://robohash.org/user11.png",
+    "https://robohash.org/user12.png",
+    "https://robohash.org/user13.png",
+    "https://robohash.org/user14.png",
+    "https://robohash.org/user15.png",
+    "https://robohash.org/user16.png",
+    "https://robohash.org/user17.png",
+    "https://robohash.org/user18.png",
+    "https://robohash.org/user19.png",
+    "https://robohash.org/user20.png",
+    "https://robohash.org/user21.png",
+    "https://robohash.org/user22.png",
+  ];
+  

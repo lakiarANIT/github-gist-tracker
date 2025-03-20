@@ -1,72 +1,106 @@
 // /app/api/profile/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@lib/database";
-import UserModel from "@models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { connectDB } from "@lib/database";
+import UserModel from "@models/User";
+import { NextResponse } from "next/server";
+import bcrypt from "bcrypt";
+import { promises as fs } from "fs";
+import path from "path";
 
-export async function GET(req: NextRequest) {
-  try {
+// Ensure MongoDB connection is established once and reused
+let isConnected = false;
+async function ensureDBConnection() {
+  if (!isConnected) {
     await connectDB();
-    const users = await UserModel.find({}).limit(10);
-    return NextResponse.json({ users, count: users.length }, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    isConnected = true; // Set flag to reuse connection
   }
 }
 
-export async function PUT(req: NextRequest) {
+export const PUT = async (request: Request) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    await connectDB();
-    const { location } = await req.json();
-    if (!location || typeof location.lat !== "number" || typeof location.lng !== "number") {
-      return NextResponse.json({ error: "Invalid location data" }, { status: 400 });
+    // Ensure DB connection (reuses existing connection if already established)
+    await ensureDBConnection();
+
+    // Define upload directory
+    const uploadDir = path.join(process.cwd(), "public/uploads");
+    await fs.mkdir(uploadDir, { recursive: true }); // Ensure directory exists
+
+    // Parse FormData from the request
+    const formData = await request.formData();
+    const fields: { [key: string]: string } = {};
+    const files: { [key: string]: { filepath: string; newFilename: string; originalFilename: string } } = {};
+
+    // Process form data entries
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        // Handle file upload
+        const file = value as File;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const uniqueFilename = `${Date.now()}-${file.name}`;
+        const filePath = path.join(uploadDir, uniqueFilename);
+        await fs.writeFile(filePath, buffer);
+        files[key] = {
+          filepath: filePath,
+          newFilename: uniqueFilename,
+          originalFilename: file.name,
+        };
+      } else {
+        // Handle text fields (including avatar URL)
+        fields[key] = value as string;
+      }
     }
+
+    const { name, email, bio, password, avatar: avatarUrl } = fields; // Extract avatar from fields
+    const avatarFile = files.avatar; // Extract avatar from files
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (bio) updateData.bio = bio;
+    if (password) updateData.password = await bcrypt.hash(password, 10);
+    if (avatarFile) {
+      const newPath = `/uploads/${avatarFile.newFilename}`;
+      updateData.avatar = newPath;
+      console.log("Avatar file saved at:", newPath); // Debug log
+    } else if (avatarUrl) {
+      updateData.avatar = avatarUrl; // Use the URL directly if no file
+      console.log("Avatar URL set to:", avatarUrl); // Debug log
+    }
+
+    console.log("Updating user with data:", updateData); // Debug log
 
     const user = await UserModel.findByIdAndUpdate(
       session.user.id,
-      { location },
-      { new: true }
+      { $set: updateData },
+      { new: true, runValidators: true }
     );
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Location updated", user }, { status: 200 });
+    console.log("Updated user:", user); // Debug log
+
+    return NextResponse.json({
+      message: "Profile updated successfully",
+      user: {
+        name: user.name,
+        email: user.email,
+        bio: user.bio,
+        avatar: user.avatar,
+      },
+    });
   } catch (error) {
-    console.error("Error updating location:", error);
-    return NextResponse.json({ error: "Failed to update location" }, { status: 500 });
+    console.error("Profile update error:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
-}
-
-// Keep your existing POST for seeding if you still need it
-export async function POST(req: NextRequest) {
-  try {
-    await connectDB();
-    const userCount = await UserModel.countDocuments({});
-    if (userCount > 0) {
-      return NextResponse.json({ message: "Users already exist. Skipping seed." }, { status: 200 });
-    }
-
-    const testUsers = Array.from({ length: 10 }, (_, i) => ({
-      email: `testuser${i + 1}@example.com`,
-      password: `password${i + 1}`,
-      name: `Test User ${i + 1}`,
-      bio: `Bio for user ${i + 1}`,
-      createdAt: new Date(),
-    }));
-
-    await UserModel.insertMany(testUsers);
-    return NextResponse.json({ message: "10 test users created", users: testUsers }, { status: 201 });
-  } catch (error) {
-    console.error("Error seeding users:", error);
-    return NextResponse.json({ error: "Failed to seed users" }, { status: 500 });
-  }
-}
+};

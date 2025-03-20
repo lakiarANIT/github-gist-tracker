@@ -8,7 +8,10 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
-      location?: { lat: number; lng: number } | null; // Add your custom location field
+      location?: { lat: number; lng: number } | null; 
+      avatar?: string | null; 
+      bio?: string | null; 
+
     };
   }
 }
