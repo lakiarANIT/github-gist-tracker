@@ -2,6 +2,7 @@
 import { Octokit } from "@octokit/core";
 
 export interface Gist {
+  [x: string]: any;
   id: string;
   html_url: string;
   description: string | null;
@@ -21,6 +22,7 @@ export interface Gist {
 }
 
 export interface GistGroup {
+  owner: any;
   id: string; // MongoDB ObjectId as string
   name: string;
   gistIds?: string[]; // Add optional gistIds array

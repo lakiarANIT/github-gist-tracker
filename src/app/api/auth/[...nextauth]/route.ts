@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions, Profile, User } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider, { GithubProfile } from "next-auth/providers/github";
 import { connectDB } from "@lib/database";
@@ -13,7 +13,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET as string,
       authorization: {
         params: {
-          scope: "user gist", // Specify the scope here
+          scope: "user gist", 
         },
       },
       profile(profile: GithubProfile) {
@@ -95,7 +95,7 @@ export const authOptions: NextAuthOptions = {
           bio: dbUser.bio,
           avatar: dbUser.avatar,
           location: dbUser.location || null,
-          githubToken: dbUser.githubToken, // Add githubToken to the session
+          githubToken: dbUser.githubToken, 
         };
       }
       console.log("Session updated:", session);

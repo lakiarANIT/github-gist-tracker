@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
-import { Gist, GistFile, NewGist } from "../../types";
+import { Gist, NewGist } from "../../types";
 import CreateGistForm from "../../components/CreateGistForm";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
@@ -127,6 +127,8 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
           setGists={() => {}}
           setGistGroups={setGistGroups}
           setActiveTab={() => router.push("/profile")}
+          githubUsername={githubUsername} // Pass githubUsername here
+
         />
       </div>
     </div>

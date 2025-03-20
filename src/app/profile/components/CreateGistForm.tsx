@@ -18,6 +18,7 @@ interface CreateGistFormProps {
   setGists: (gists: Gist[]) => void;
   setGistGroups: (groups: GistGroup[]) => void;
   setActiveTab: (tab: "profile" | "postGist") => void;
+  githubUsername: string; // Add this to identify the owner
 }
 
 interface GitHubGistFile {
@@ -44,6 +45,7 @@ export default function CreateGistForm({
   setGists,
   setGistGroups,
   setActiveTab,
+  githubUsername, // Add this prop
 }: CreateGistFormProps) {
   const router = useRouter();
   const isEditing = !!window.location.pathname.includes("/edit/");
@@ -54,7 +56,7 @@ export default function CreateGistForm({
 
     const createdGists: Gist[] = [];
     for (const file of files) {
-      if (!file.filename.trim() || !file.content.trim()) continue; // Skip invalid files
+      if (!file.filename.trim() || !file.content.trim()) continue;
 
       const gistFiles = { [file.filename]: { content: file.content } };
       const response = await octokit.request("POST /gists", {
@@ -179,11 +181,16 @@ export default function CreateGistForm({
     const response = await fetch("/api/gist-groups", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, ownerLogin: githubUsername }), // Include ownerLogin
     });
     if (!response.ok) throw new Error("Failed to create Gist group");
     const data = await response.json();
-    return { id: data.group._id.toString(), name: data.group.name, gistIds: data.group.gistIds || [] };
+    return {
+      id: data.group._id.toString(),
+      name: data.group.name,
+      gistIds: data.group.gistIds || [],
+      owner: { login: data.group.ownerLogin }, // Return owner with login
+    };
   };
 
   const addGistToGroup = async (groupId: string, gistId: string) => {
@@ -231,12 +238,10 @@ export default function CreateGistForm({
 
     try {
       if (isEditing && gistId) {
-        // Editing mode: Update the existing Gist with all files
         const updatedGist = await updateGist(gistId, newGist.description, validFiles);
         setGists(gists.map((g) => (g.id === updatedGist.id ? updatedGist : g)));
         alert("Gist updated successfully!");
       } else {
-        // Creation mode: Create separate Gists for each file
         const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
 
         if (newGists.length === 0) {
@@ -254,10 +259,8 @@ export default function CreateGistForm({
           return;
         }
 
-        // Add all new Gists to the group
         await Promise.all(newGists.map((gist) => addGistToGroup(groupId, gist.id)));
 
-        // Fetch updated Gists for the group
         const response = await fetch(`/api/gist-groups/${groupId}/gists`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },

@@ -25,8 +25,9 @@ export default function ProfilePage() {
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
-  const [shouldFetchGists, setShouldFetchGists] = useState(true); // Control gist fetching
-  const isMounted = useRef(true); // Track component mount state
+  const [shouldFetchGists, setShouldFetchGists] = useState(true);
+  const [githubUsername, setGithubUsername] = useState<string>(""); // Add this state
+  const isMounted = useRef(true);
 
   useEffect(() => {
     isMounted.current = true;
@@ -44,7 +45,12 @@ export default function ProfilePage() {
           const tokenData = await tokenResponse.json();
           const { githubToken } = tokenData;
           if (githubToken) {
-            setOctokit(new Octokit({ auth: githubToken }));
+            const okt = new Octokit({ auth: githubToken });
+            setOctokit(okt);
+            const userResponse = await okt.request("GET /user", {
+              headers: { "X-GitHub-Api-Version": "2022-11-28" },
+            });
+            if (isMounted.current) setGithubUsername(userResponse.data.login); // Set the username
           } else {
             alert("Please link your GitHub account to create Gists.");
           }
@@ -59,6 +65,7 @@ export default function ProfilePage() {
             id: group._id.toString(),
             name: group.name,
             gistIds: group.gistIds || [],
+            owner: { login: group.ownerLogin }, // Assuming API returns ownerLogin
           }));
           if (isMounted.current) setGistGroups(fetchedGroups);
         } catch (error) {
@@ -75,17 +82,19 @@ export default function ProfilePage() {
     }
 
     return () => {
-      isMounted.current = false; // Cleanup on unmount
+      isMounted.current = false;
     };
   }, [status, session]);
 
   useEffect(() => {
     const fetchGists = async () => {
-      if (!isMounted.current || status !== "authenticated" || !shouldFetchGists) return; // Skip fetch if unmounted or disabled
+      if (!isMounted.current || status !== "authenticated" || !shouldFetchGists) return;
 
       try {
         let url = "/api/all-gists";
-        if (selectedGroupId) {
+        if (selectedGroupId === "my-gists") {
+          url = "/api/my-gists"; // Add an endpoint for user's gists
+        } else if (selectedGroupId) {
           url = `/api/gist-groups/${selectedGroupId}/gists`;
         }
 
@@ -185,7 +194,7 @@ export default function ProfilePage() {
                   if (isMounted.current) {
                     setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
                   }
-                  return; // No error thrown, just cleanup
+                  return;
                 }
                 throw new Error(`Failed to update group ${group.id}: ${errorData.error || response.statusText}`);
               } else {
@@ -196,7 +205,7 @@ export default function ProfilePage() {
                   if (isMounted.current) {
                     setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
                   }
-                  return; // No error thrown, just cleanup
+                  return;
                 }
                 throw new Error(`Failed to update group ${group.id}: Received non-JSON response (status ${response.status})`);
               }
@@ -249,6 +258,7 @@ export default function ProfilePage() {
       console.log("[DELETE] Re-enabled Gist fetching");
     }
   };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -304,6 +314,8 @@ export default function ProfilePage() {
                   setGists={setGists}
                   setGistGroups={setGistGroups}
                   setActiveTab={setActiveTab}
+                  githubUsername={githubUsername} // Pass githubUsername here
+
                 />
               )}
             </div>
