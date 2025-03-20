@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Octokit } from "@octokit/core";
 import { dummyGists, Gist, GistGroup, NewGist } from "./types";
 import Sidebar from "./components/Sidebar";
@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [gists, setGists] = useState<Gist[]>(dummyGists);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // "" means all gists
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"profile" | "postGist">("profile");
   const [newGist, setNewGist] = useState<NewGist>({
     description: "",
@@ -25,9 +25,11 @@ export default function ProfilePage() {
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+  const [shouldFetchGists, setShouldFetchGists] = useState(true); // Control gist fetching
+  const isMounted = useRef(true); // Track component mount state
 
-  // Fetch GitHub token and initialize Octokit, fetch Gist groups
   useEffect(() => {
+    isMounted.current = true;
     const initializeOctokitAndGroups = async () => {
       if (status === "authenticated" && session?.user?.email) {
         try {
@@ -35,9 +37,11 @@ export default function ProfilePage() {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
+          if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            throw new Error(`Failed to fetch GitHub token: ${errorText}`);
+          }
           const tokenData = await tokenResponse.json();
-          if (!tokenResponse.ok) throw new Error(tokenData.error || "Failed to fetch GitHub token");
-
           const { githubToken } = tokenData;
           if (githubToken) {
             setOctokit(new Octokit({ auth: githubToken }));
@@ -54,11 +58,12 @@ export default function ProfilePage() {
           const fetchedGroups = (groupsData.groups || []).map((group: any) => ({
             id: group._id.toString(),
             name: group.name,
+            gistIds: group.gistIds || [],
           }));
-          setGistGroups(fetchedGroups);
+          if (isMounted.current) setGistGroups(fetchedGroups);
         } catch (error) {
           console.error("Error initializing:", error);
-          alert("Failed to initialize. Please try again.");
+          if (isMounted.current) alert("Failed to initialize. Please try again.");
         }
       }
     };
@@ -68,17 +73,20 @@ export default function ProfilePage() {
     if (status === "authenticated" && !session?.user?.location) {
       setShowLocationPrompt(true);
     }
+
+    return () => {
+      isMounted.current = false; // Cleanup on unmount
+    };
   }, [status, session]);
 
-  // Fetch Gists based on selectedGroupId ("" for all, specific ID for group)
   useEffect(() => {
     const fetchGists = async () => {
-      if (status !== "authenticated") return;
+      if (!isMounted.current || status !== "authenticated" || !shouldFetchGists) return; // Skip fetch if unmounted or disabled
 
       try {
-        let url = "/api/all-gists"; // New endpoint for all gists
+        let url = "/api/all-gists";
         if (selectedGroupId) {
-          url = `/api/gist-groups/${selectedGroupId}/gists`; // Group-specific gists
+          url = `/api/gist-groups/${selectedGroupId}/gists`;
         }
 
         const response = await fetch(url, {
@@ -86,18 +94,19 @@ export default function ProfilePage() {
           headers: { "Content-Type": "application/json" },
         });
         if (!response.ok) {
-          throw new Error(`Failed to fetch Gists: ${response.statusText}`);
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch Gists: ${errorText}`);
         }
         const data = await response.json();
-        setGists(data.gists || []);
+        if (isMounted.current) setGists(data.gists || []);
       } catch (error) {
         console.error("Error fetching Gists:", error);
-        setGists(dummyGists); // Fallback to dummy data
+        if (isMounted.current) setGists(dummyGists);
       }
     };
 
     fetchGists();
-  }, [selectedGroupId, status]);
+  }, [selectedGroupId, status, shouldFetchGists]);
 
   const requestLocation = async () => {
     if (navigator.geolocation) {
@@ -127,6 +136,119 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteGist = async (gistId: string) => {
+    if (!octokit) {
+      console.log("[DELETE] Octokit not initialized, aborting deletion");
+      alert("Octokit not initialized.");
+      return;
+    }
+  
+    console.log("[DELETE] Preparing to delete Gist:", gistId);
+    if (!confirm("Are you sure you want to delete this gist?")) {
+      console.log("[DELETE] Deletion cancelled by user");
+      return;
+    }
+  
+    setShouldFetchGists(false);
+    console.log("[DELETE] Disabled Gist fetching during deletion");
+  
+    try {
+      console.log("[DELETE] Sending DELETE request to GitHub for Gist:", gistId);
+      const deleteResponse = await octokit.request("DELETE /gists/{gist_id}", {
+        gist_id: gistId,
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      });
+  
+      if (deleteResponse.status !== 204) {
+        throw new Error(`GitHub API returned status ${deleteResponse.status}`);
+      }
+      console.log("[DELETE] Gist successfully deleted from GitHub");
+  
+      const affectedGroups = gistGroups.filter((group) => group.gistIds?.includes(gistId));
+      if (affectedGroups.length > 0) {
+        console.log("[DELETE] Updating affected groups:", affectedGroups);
+        await Promise.all(
+          affectedGroups.map(async (group) => {
+            console.log("[DELETE] Patching group:", group.id);
+            const response = await fetch(`/api/gist-groups/${group.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ gistIdToRemove: gistId }),
+            });
+  
+            if (!response.ok) {
+              const contentType = response.headers.get("content-type");
+              if (contentType && contentType.includes("application/json")) {
+                const errorData = await response.json();
+                if (response.status === 404) {
+                  console.log(`[DELETE] Group ${group.id} not found, removing from local state`);
+                  if (isMounted.current) {
+                    setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
+                  }
+                  return; // No error thrown, just cleanup
+                }
+                throw new Error(`Failed to update group ${group.id}: ${errorData.error || response.statusText}`);
+              } else {
+                const text = await response.text();
+                console.log("[DELETE] Non-JSON response from server (likely 404 page):", text.slice(0, 200));
+                if (response.status === 404) {
+                  console.log(`[DELETE] Group ${group.id} endpoint returned 404, treating as not found`);
+                  if (isMounted.current) {
+                    setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
+                  }
+                  return; // No error thrown, just cleanup
+                }
+                throw new Error(`Failed to update group ${group.id}: Received non-JSON response (status ${response.status})`);
+              }
+            }
+            const data = await response.json();
+            console.log("[DELETE] Group updated successfully:", group.id, data.group);
+            if (isMounted.current) {
+              setGistGroups((prevGroups) =>
+                prevGroups.map((g) =>
+                  g.id === group.id ? { ...g, gistIds: data.group.gistIds } : g
+                )
+              );
+            }
+          })
+        );
+      }
+  
+      if (isMounted.current) {
+        setGists((prevGists) => prevGists.filter((gist) => gist.id !== gistId));
+        console.log("[DELETE] Local Gist state updated");
+      }
+  
+      console.log("[DELETE] Refetching Gists after deletion");
+      const response = await fetch("/api/all-gists", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to refetch Gists: ${errorText}`);
+      }
+      const data = await response.json();
+      if (isMounted.current) {
+        setGists(data.gists || []);
+        console.log("[DELETE] Gists refetched and updated:", data.gists.length);
+      }
+  
+      console.log("[DELETE] Gist deletion completed");
+      alert("Gist deleted successfully!");
+    } catch (error) {
+      console.error("[DELETE] Error deleting Gist:", error);
+      let errorMessage = "Failed to delete gist.";
+      if (error instanceof Error) {
+        errorMessage += ` ${error.message}`;
+      }
+      console.log("[DELETE] Displaying error to user:", errorMessage);
+      alert(errorMessage);
+    } finally {
+      setShouldFetchGists(true);
+      console.log("[DELETE] Re-enabled Gist fetching");
+    }
+  };
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -191,6 +313,7 @@ export default function ProfilePage() {
             selectedGroupId={selectedGroupId}
             gistGroups={gistGroups}
             linkedGist={linkedGist}
+            onDeleteGist={handleDeleteGist}
           />
         </div>
       </div>

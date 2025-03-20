@@ -150,3 +150,61 @@ export async function GET(req: Request, { params }: { params: Promise<{ groupId:
 
   return NextResponse.json({ gists }, { status: 200 });
 }
+
+
+export async function PATCH(req: Request, { params }: { params: { groupId: string } }) {
+    console.log(`[PATCH /api/gist-groups/${params.groupId}] Starting PATCH request`);
+  
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      console.log(`[PATCH /api/gist-groups/${params.groupId}] Unauthorized`);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.log(`[PATCH /api/gist-groups/${params.groupId}] Session authenticated for user:`, session.user.id);
+  
+    const { groupId } = params;
+    console.log(`[PATCH /api/gist-groups/${groupId}] Group ID:`, groupId);
+  
+    let body;
+    try {
+      body = await req.json();
+    } catch (error) {
+      console.error(`[PATCH /api/gist-groups/${groupId}] Invalid JSON in request body:`, error);
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+  
+    const { gistIdToRemove } = body;
+    if (!gistIdToRemove || typeof gistIdToRemove !== "string") {
+      console.log(`[PATCH /api/gist-groups/${groupId}] Invalid gistIdToRemove:`, gistIdToRemove);
+      return NextResponse.json({ error: "Invalid gistIdToRemove" }, { status: 400 });
+    }
+  
+    try {
+      await connectDB();
+      console.log(`[PATCH /api/gist-groups/${groupId}] Connected to database`);
+  
+      const group = await GistGroup.findOne({ _id: groupId, userId: session.user.id });
+      if (!group) {
+        console.log(`[PATCH /api/gist-groups/${groupId}] Group not found for user ${session.user.id}`);
+        return NextResponse.json({ error: "Group not found" }, { status: 404 });
+      }
+      console.log(`[PATCH /api/gist-groups/${groupId}] Group found:`, group);
+  
+      const updatedGistIds = group.gistIds.filter((id: string) => id !== gistIdToRemove);
+      if (updatedGistIds.length === group.gistIds.length) {
+        console.log(`[PATCH /api/gist-groups/${groupId}] Gist ID ${gistIdToRemove} not in group`);
+        return NextResponse.json({ message: "Gist ID not found in group", group }, { status: 200 });
+      }
+  
+      group.gistIds = updatedGistIds;
+      await group.save();
+      console.log(`[PATCH /api/gist-groups/${groupId}] Group updated successfully:`, group);
+  
+      return NextResponse.json({ message: "Group updated successfully", group }, { status: 200 });
+    } catch (error) {
+      console.error(`[PATCH /api/gist-groups/${groupId}] Error:`, error);
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+  }
+  
+  

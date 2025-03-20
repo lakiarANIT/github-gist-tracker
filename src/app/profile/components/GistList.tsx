@@ -1,16 +1,66 @@
-import { FaHeart, FaComment, FaShare, FaCode } from "react-icons/fa";
+// File: /app/profile/components/GistList.tsx
+import { FaHeart, FaComment, FaShare, FaCode, FaEdit, FaTrash } from "react-icons/fa";
 import { Gist, GistGroup } from "../types";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Octokit } from "@octokit/core";
 
 interface GistListProps {
   gists: Gist[];
   selectedGroupId: string;
   gistGroups: GistGroup[];
   linkedGist: string | null;
+  onDeleteGist: (gistId: string) => Promise<void>;
 }
 
-export default function GistList({ gists, selectedGroupId, gistGroups, linkedGist }: GistListProps) {
+export default function GistList({ gists, selectedGroupId, gistGroups, linkedGist, onDeleteGist }: GistListProps) {
   const { data: session } = useSession();
+  const router = useRouter();
+  const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch GitHub token and username on mount
+  useEffect(() => {
+    const fetchGithubUsername = async () => {
+      if (session) {
+        try {
+          const tokenResponse = await fetch("/api/github-token", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+          const tokenData = await tokenResponse.json();
+          if (!tokenResponse.ok) throw new Error(tokenData.error || "Failed to fetch GitHub token");
+
+          const { githubToken } = tokenData;
+          if (githubToken) {
+            const octokit = new Octokit({ auth: githubToken });
+            const userResponse = await octokit.request("GET /user", {
+              headers: { "X-GitHub-Api-Version": "2022-11-28" },
+            });
+            setGithubUsername(userResponse.data.login);
+          }
+        } catch (error) {
+          console.error("Error fetching GitHub username:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchGithubUsername();
+  }, [session]);
+
+  // Check if the current user is the owner of the gist
+  const isOwner = (gist: Gist) => {
+    const gistOwner = gist.owner.login;
+    console.log("Checking ownership - User:", githubUsername, "Gist Owner:", gistOwner); // Debug log
+    return githubUsername && gistOwner && githubUsername.toLowerCase() === gistOwner.toLowerCase();
+  };
+
+  if (loading) {
+    return <div>Loading gists...</div>; // Optional loading state
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
@@ -27,11 +77,11 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
               return (
                 <div
                   key={gist.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <img
-                      src={session?.user?.avatar || "/default-avatar.png"}
+                      src={session?.user?.image || "/default-avatar.png"}
                       alt="Profile"
                       className="w-8 h-8 rounded-full border border-gray-300 object-cover"
                       onError={(e) => (e.currentTarget.src = "/default-avatar.png")}
@@ -81,6 +131,24 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
                       <FaCode className="w-4 h-4" /> View Full Gist
                     </a>
                   </div>
+                  {githubUsername && isOwner(gist) && (
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        onClick={() => router.push(`/profile/edit/${gist.id}`)}
+                        className="text-blue-500 hover:text-blue-700"
+                        title="Edit Gist"
+                      >
+                        <FaEdit className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteGist(gist.id)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Delete Gist"
+                      >
+                        <FaTrash className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
