@@ -2,46 +2,48 @@
 import { Octokit } from "@octokit/core";
 
 export interface Gist {
-  [x: string]: any;
-  id: string;
-  html_url: string;
-  description: string | null;
-  files: {
-    [key: string]: {
-      filename: string;
-      language: string;
-      raw_url: string;
-      size: number;
+    [x: string]: any;
+    id: string;
+    html_url: string;
+    description: string | null;
+    files: {
+        [key: string]: {
+            filename: string;
+            language: string;
+            raw_url: string;
+            size: number;
+        };
     };
-  };
-  created_at: string;
-  updated_at: string;
-  public: boolean;
-  comments: number;
-  owner: { login: string; html_url: string };
+    created_at: string;
+    updated_at: string;
+    public: boolean;
+    comments: number;
+    owner: {
+        login: string; html_url: string; avatar_url?: string; // Add this field, optional since it might not always be present
+    };
 }
 
 export interface GistGroup {
-  owner: any;
-  id: string; // MongoDB ObjectId as string
-  name: string;
-  gistIds?: string[]; // Add optional gistIds array
+    owner: any;
+    id: string; // MongoDB ObjectId as string
+    name: string;
+    gistIds?: string[]; // Add optional gistIds array
 }
 
 export interface GistFile {
-  filename: string;
-  content: string;
-  language: string;
+    filename: string;
+    content: string;
+    language: string;
 }
 
 export const dummyGists: Gist[] = [
-  // ... (unchanged)
+    // ... (unchanged)
 ];
 
 export interface NewGist {
-  description: string;
-  files: GistFile[];
-  isPublic: boolean;
+    description: string;
+    files: GistFile[];
+    isPublic: boolean;
 }
 
 export type ActiveTab = "profile" | "postGist";
