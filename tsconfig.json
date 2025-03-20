@@ -27,6 +27,7 @@
       "@gistspages/*": ["src/gistspages/*"],
       "@lib/*": ["src/lib/*"],
       "@app/*": ["src/app/*"],
+      "@types/*": ["src/types/*"],
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts","types/**/*.d.ts"],

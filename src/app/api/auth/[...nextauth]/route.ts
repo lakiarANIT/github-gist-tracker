@@ -1,7 +1,6 @@
-// /app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions, Profile, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GitHubProvider, { GithubProfile } from "next-auth/providers/github"; // Import GithubProfile
+import GitHubProvider, { GithubProfile } from "next-auth/providers/github";
 import { connectDB } from "@lib/database";
 import UserModel from "@models/User";
 import bcrypt from "bcrypt";
@@ -12,10 +11,15 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,
-      profile(profile: GithubProfile) { // Explicitly type as GithubProfile
+      authorization: {
+        params: {
+          scope: "user gist", // Specify the scope here
+        },
+      },
+      profile(profile: GithubProfile) {
         return {
           id: profile.id.toString(),
-          name: profile.name ?? profile.login ?? null, // login is available on GithubProfile
+          name: profile.name ?? profile.login ?? null,
           email: profile.email ?? null,
           image: profile.avatar_url ?? null,
         };
@@ -51,7 +55,7 @@ export const authOptions: NextAuthOptions = {
           await connectDB();
           let dbUser = await UserModel.findOne({ email: user.email });
 
-          const githubProfile = profile as GithubProfile; // Cast profile to GithubProfile
+          const githubProfile = profile as GithubProfile;
 
           if (!dbUser) {
             dbUser = new UserModel({
@@ -91,6 +95,7 @@ export const authOptions: NextAuthOptions = {
           bio: dbUser.bio,
           avatar: dbUser.avatar,
           location: dbUser.location || null,
+          githubToken: dbUser.githubToken, // Add githubToken to the session
         };
       }
       console.log("Session updated:", session);

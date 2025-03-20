@@ -11,7 +11,7 @@ declare module "next-auth" {
       location?: { lat: number; lng: number } | null; 
       avatar?: string | null; 
       bio?: string | null; 
-
+      githubToken?: string; 
     };
   }
 }
