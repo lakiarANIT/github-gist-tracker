@@ -1,22 +1,8 @@
+// src/components/home/PublicGistList.tsx
 import { useState, useEffect } from "react";
-import { Octokit } from "@octokit/core";
-import { Endpoints } from "@octokit/types";
 import GistCard from "src/app/profile/components/GistCard";
 import GistDetailsExpanded from "src/app/profile/components/GistDetailsExpanded";
 import { Gist, GistGroup } from "src/app/profile/types";
-
-interface LocalGistDetails {
-  id: string;
-  description: string | null;
-  owner: { login: string };
-  files: { [key: string]: { filename: string; language: string | null; content: string } };
-  created_at: string;
-  updated_at: string;
-  public: boolean;
-  forks_url: string;
-  comments: number;
-  [key: string]: any;
-}
 
 interface PublicGistListProps {
   gists: Gist[];
@@ -25,47 +11,9 @@ interface PublicGistListProps {
 }
 
 export default function PublicGistList({ gists, selectedGroupId, gistGroups }: PublicGistListProps) {
-  const [loading, setLoading] = useState(true);
   const [expandedGistId, setExpandedGistId] = useState<string | null>(null);
-  const [gistDetailsMap, setGistDetailsMap] = useState<Map<string, LocalGistDetails>>(new Map());
-  const [octokit] = useState(new Octokit());
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
-
-  useEffect(() => {
-    const fetchGistDetails = async () => {
-      if (!gists.length) return;
-
-      setLoading(true);
-      try {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, gists.length);
-        const currentGists = gists.slice(startIndex, endIndex);
-
-        type GistResponse = Endpoints["GET /gists/{gist_id}"]["response"];
-        const detailsPromises = currentGists.map((gist) =>
-          octokit
-            .request("GET /gists/{gist_id}", { gist_id: gist.id, headers: { "X-GitHub-Api-Version": "2022-11-28" } })
-            .then((response: GistResponse) => response)
-            .catch((err) => {
-              console.error(`Failed to fetch details for gist ${gist.id}:`, err);
-              return null;
-            })
-        );
-
-        const detailsResponses = await Promise.all(detailsPromises);
-        const detailsArray: [string, LocalGistDetails][] = detailsResponses
-          .filter((res): res is GistResponse => res !== null && typeof res.data.id === "string")
-          .map((res) => [res.data.id as string, res.data as LocalGistDetails]);
-        setGistDetailsMap((prev) => new Map([...prev, ...detailsArray]));
-      } catch (error) {
-        console.error("Error fetching gist details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGistDetails();
-  }, [gists, currentPage]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,10 +51,7 @@ export default function PublicGistList({ gists, selectedGroupId, gistGroups }: P
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setExpandedGistId(null);
-    setLoading(true);
   };
-
-  if (loading) return <div>Loading gists...</div>;
 
   const displayedGists = getPaginatedGists();
 
@@ -121,7 +66,6 @@ export default function PublicGistList({ gists, selectedGroupId, gistGroups }: P
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
           {displayedGists.map((gist) => {
             const isExpanded = expandedGistId === gist.id;
-            const gistDetails = gistDetailsMap.get(gist.id);
             const isFirst = gists.findIndex((g) => g.id === gist.id) === 0;
             const isLast = gists.findIndex((g) => g.id === gist.id) === gists.length - 1;
 
@@ -148,10 +92,18 @@ export default function PublicGistList({ gists, selectedGroupId, gistGroups }: P
                     onDeleteGist={() => {}}
                   />
                 )}
-                {isExpanded && gistDetails && (
+                {isExpanded && (
                   <GistDetailsExpanded
                     gist={gist}
-                    gistDetails={gistDetails}
+                    gistDetails={{
+                      ...gist,
+                      files: Object.fromEntries(
+                        Object.entries(gist.files).map(([key, file]) => [
+                          key,
+                          { ...file, language: file.language || null, content: file.content || "" }
+                        ])
+                      ),
+                    }}
                     isFirst={isFirst}
                     isLast={isLast}
                     isOwner={false}

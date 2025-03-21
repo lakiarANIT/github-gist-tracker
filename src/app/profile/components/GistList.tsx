@@ -40,7 +40,7 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const ITEMS_PER_PAGE = 6; // Consistent across all devices
+  const ITEMS_PER_PAGE = 6;
 
   // Fetch initial data
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
       }
     };
     fetchInitialData();
-  }, [session]); // Only depends on session
+  }, [session]);
 
   // Fetch gists for the current page
   useEffect(() => {
@@ -80,9 +80,16 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
 
       setLoading(true);
       try {
+        const filteredGists = selectedGroupId
+          ? gists.filter((gist) =>
+              gistGroups
+                .find((group) => group.id === selectedGroupId)
+                ?.gistIds?.some((g) => g.id === gist.id)
+            )
+          : gists;
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, gists.length);
-        const currentGists = gists.slice(startIndex, endIndex);
+        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredGists.length);
+        const currentGists = filteredGists.slice(startIndex, endIndex);
 
         type GistResponse = Endpoints["GET /gists/{gist_id}"]["response"];
         const detailsPromises = currentGists.map((gist) =>
@@ -122,7 +129,7 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
       }
     };
     fetchPageData();
-  }, [octokit, gists, currentPage]); // Stable dependencies
+  }, [octokit, gists, currentPage, selectedGroupId, gistGroups]);
 
   const toggleStar = async (gistId: string) => {
     if (!octokit) return;
@@ -150,13 +157,27 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
   };
 
   const handleNextGist = () => {
-    const currentIndex = gists.findIndex((gist) => gist.id === expandedGistId);
-    if (currentIndex < gists.length - 1) setExpandedGistId(gists[currentIndex + 1].id);
+    const filteredGists = selectedGroupId
+      ? gists.filter((gist) =>
+          gistGroups
+            .find((group) => group.id === selectedGroupId)
+            ?.gistIds?.some((g) => g.id === gist.id)
+        )
+      : gists;
+    const currentIndex = filteredGists.findIndex((gist) => gist.id === expandedGistId);
+    if (currentIndex < filteredGists.length - 1) setExpandedGistId(filteredGists[currentIndex + 1].id);
   };
 
   const handlePreviousGist = () => {
-    const currentIndex = gists.findIndex((gist) => gist.id === expandedGistId);
-    if (currentIndex > 0) setExpandedGistId(gists[currentIndex - 1].id);
+    const filteredGists = selectedGroupId
+      ? gists.filter((gist) =>
+          gistGroups
+            .find((group) => group.id === selectedGroupId)
+            ?.gistIds?.some((g) => g.id === gist.id)
+        )
+      : gists;
+    const currentIndex = filteredGists.findIndex((gist) => gist.id === expandedGistId);
+    if (currentIndex > 0) setExpandedGistId(filteredGists[currentIndex - 1].id);
   };
 
   const isOwner = (gist: Gist): boolean => {
@@ -164,17 +185,32 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
   };
 
   const getPaginatedGists = () => {
+    const filteredGists = selectedGroupId
+      ? gists.filter((gist) =>
+          gistGroups
+            .find((group) => group.id === selectedGroupId)
+            ?.gistIds?.some((g) => g.id === gist.id)
+        )
+      : gists;
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, gists.length);
-    return expandedGistId ? gists.filter((gist) => gist.id === expandedGistId) : gists.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredGists.length);
+    return expandedGistId ? filteredGists.filter((gist) => gist.id === expandedGistId) : filteredGists.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(gists.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    (selectedGroupId
+      ? gists.filter((gist) =>
+          gistGroups
+            .find((group) => group.id === selectedGroupId)
+            ?.gistIds?.some((g) => g.id === gist.id)
+        ).length
+      : gists.length) / ITEMS_PER_PAGE
+  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     setExpandedGistId(null);
-    setLoading(true); // Trigger loading for new page
+    setLoading(true);
   };
 
   if (loading) return <div>Loading gists...</div>;
@@ -187,7 +223,7 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
         Gists {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name}` : "from All Groups"}
       </h2>
-      {gists.length === 0 ? (
+      {displayedGists.length === 0 ? (
         <p className="text-sm text-gray-600">No gists available yet. Share one!</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
@@ -195,8 +231,15 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
             const isExpanded = expandedGistId === gist.id;
             const isStarred = starredGists.has(gist.id);
             const gistDetails = gistDetailsMap.get(gist.id);
-            const isFirst = gists.findIndex((g) => g.id === gist.id) === 0;
-            const isLast = gists.findIndex((g) => g.id === gist.id) === gists.length - 1;
+            const filteredGists = selectedGroupId
+              ? gists.filter((g) =>
+                  gistGroups
+                    .find((group) => group.id === selectedGroupId)
+                    ?.gistIds?.some((g) => g.id === g.id)
+                )
+              : gists;
+            const isFirst = filteredGists.findIndex((g) => g.id === gist.id) === 0;
+            const isLast = filteredGists.findIndex((g) => g.id === gist.id) === filteredGists.length - 1;
             const relatedGist = gists.find((g) => g.id === linkedGist);
 
             return (

@@ -1,3 +1,4 @@
+// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GitHubProvider, { GithubProfile } from "next-auth/providers/github";
@@ -13,12 +14,13 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET as string,
       authorization: {
         params: {
-          scope: "user gist", 
+          scope: "user gist",
         },
       },
       profile(profile: GithubProfile) {
         return {
           id: profile.id.toString(),
+          login: profile.login,
           name: profile.name ?? profile.login ?? null,
           email: profile.email ?? null,
           image: profile.avatar_url ?? null,
@@ -41,7 +43,12 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        return { id: user._id.toString(), email: user.email, name: user.name };
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          login: user.login,
+          name: user.name,
+        };
       },
     }),
   ],
@@ -54,24 +61,29 @@ export const authOptions: NextAuthOptions = {
         try {
           await connectDB();
           let dbUser = await UserModel.findOne({ email: user.email });
-
           const githubProfile = profile as GithubProfile;
 
           if (!dbUser) {
+            // Only set login for new users
             dbUser = new UserModel({
               email: user.email!,
+              login: githubProfile.login, // Set login for new users
               name: user.name ?? githubProfile.login ?? undefined,
               avatar: user.image ?? undefined,
               githubToken: account.access_token,
             });
             await dbUser.save();
+            console.log("New user created with login:", dbUser.login);
           } else {
+            // Update other fields for existing users, but not login
             dbUser.name = dbUser.name ?? user.name ?? githubProfile.login ?? undefined;
             dbUser.avatar = dbUser.avatar ?? user.image ?? undefined;
             dbUser.githubToken = account.access_token;
             await dbUser.save();
+            console.log("Existing user updated (login unchanged):", dbUser);
           }
           user.id = dbUser._id.toString();
+          user.login = dbUser.login; // Will be undefined for existing users unless manually set
         } catch (error) {
           console.error("SignIn callback error:", error);
           return false;
@@ -80,7 +92,10 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.login = user.login;
+      }
       return token;
     },
     async session({ session, token }) {
@@ -90,12 +105,13 @@ export const authOptions: NextAuthOptions = {
         session.user = {
           ...session.user,
           id: token.id as string,
+          login: dbUser.login,
           name: dbUser.name,
           email: dbUser.email,
           bio: dbUser.bio,
           avatar: dbUser.avatar,
           location: dbUser.location || null,
-          githubToken: dbUser.githubToken, 
+          githubToken: dbUser.githubToken,
         };
       }
       console.log("Session updated:", session);
@@ -106,13 +122,6 @@ export const authOptions: NextAuthOptions = {
   debug: true,
 };
 
-const handler = async (req: Request, context: any) => {
-  try {
-    return await NextAuth(authOptions)(req, context);
-  } catch (error) {
-    console.error("NextAuth handler error:", error);
-    return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
-  }
-};
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

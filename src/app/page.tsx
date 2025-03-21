@@ -1,8 +1,9 @@
+// src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import PublicGistList from "src/components/home/PublicGistList";
-import Navbar from "src/components/ui/Navbar"; // Assuming Navbar is here
+import Navbar from "src/components/ui/Navbar";
 import { Gist, GistGroup } from "src/app/profile/types";
 
 export default function Home() {
@@ -33,7 +34,7 @@ export default function Home() {
 
   const filteredGists = selectedGroupId
     ? gists.filter((gist) =>
-        (gistGroups.find((group) => group.id === selectedGroupId)?.gistIds ?? []).includes(gist.id)
+        (gistGroups.find((group) => group.id === selectedGroupId)?.gistIds ?? []).some((g) => g.id === gist.id)
       )
     : gists;
 
@@ -47,16 +48,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Fixed Navbar with Gist Selection */}
       <Navbar
         gistGroups={gistGroups}
         gists={gists}
         selectedGroupId={selectedGroupId}
         setSelectedGroupId={setSelectedGroupId}
       />
-      {/* Content Wrapper */}
       <div className="pt-[72px] relative z-0">
-        {/* Main Content */}
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <header className="mb-6">

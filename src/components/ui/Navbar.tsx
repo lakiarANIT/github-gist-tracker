@@ -1,9 +1,10 @@
+// src/components/ui/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { FaFolder, FaChevronDown } from "react-icons/fa"; // Added icons for dropdown
+import { FaFolder, FaChevronDown } from "react-icons/fa";
 import { Gist, GistGroup } from "src/app/profile/types";
 import React from "react";
 
@@ -17,10 +18,9 @@ interface NavbarProps {
 export default function Navbar({ gistGroups, gists, selectedGroupId, setSelectedGroupId }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isGistsOpen, setIsGistsOpen] = useState(false); // State for Gists dropdown
+  const [isGistsOpen, setIsGistsOpen] = useState(false);
   const { data: session, status } = useSession();
 
-  // Sort and group by first letter (same logic as sidebar)
   const sortedGroups = React.useMemo(() => {
     const sorted = [...gistGroups].sort((a, b) => a.name.localeCompare(b.name));
     return sorted.reduce((acc, group) => {
@@ -49,7 +49,6 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
               <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${isGistsOpen ? "rotate-180" : ""}`} />
             </button>
 
-            {/* Gists Dropdown */}
             {isGistsOpen && (
               <div className="absolute left-0 mt-2 w-64 bg-white text-gray-900 rounded-md shadow-lg z-10 max-h-[70vh] overflow-y-auto">
                 <button

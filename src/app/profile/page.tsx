@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import { Octokit } from "@octokit/core";
-import { dummyGists, Gist, GistGroup, NewGist } from "./types";
+import { Gist, GistGroup, NewGist } from "./types";
 import Sidebar from "./components/Sidebar";
 import ProfileView from "./components/ProfileView";
 import CreateGistForm from "./components/CreateGistForm";
@@ -12,7 +12,7 @@ import GistList from "./components/GistList";
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [gists, setGists] = useState<Gist[]>(dummyGists);
+  const [gists, setGists] = useState<Gist[]>([]);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"profile" | "postGist">("profile");
@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [shouldFetchGists, setShouldFetchGists] = useState(true);
-  const [githubUsername, setGithubUsername] = useState<string>(""); // Add this state
+  const [githubUsername, setGithubUsername] = useState<string>("");
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function ProfilePage() {
             const userResponse = await okt.request("GET /user", {
               headers: { "X-GitHub-Api-Version": "2022-11-28" },
             });
-            if (isMounted.current) setGithubUsername(userResponse.data.login); // Set the username
+            if (isMounted.current) setGithubUsername(userResponse.data.login);
           } else {
             alert("Please link your GitHub account to create Gists.");
           }
@@ -61,13 +61,10 @@ export default function ProfilePage() {
           });
           if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
           const groupsData = await groupsResponse.json();
-          const fetchedGroups = (groupsData.groups || []).map((group: any) => ({
-            id: group._id.toString(),
-            name: group.name,
-            gistIds: group.gistIds || [],
-            owner: { login: group.ownerLogin }, // Assuming API returns ownerLogin
-          }));
-          if (isMounted.current) setGistGroups(fetchedGroups);
+          if (isMounted.current) {
+            setGistGroups(groupsData.groups || []); // Directly use the response as it matches GistGroup type
+            setGists(groupsData.gists || []);
+          }
         } catch (error) {
           console.error("Error initializing:", error);
           if (isMounted.current) alert("Failed to initialize. Please try again.");
@@ -91,9 +88,9 @@ export default function ProfilePage() {
       if (!isMounted.current || status !== "authenticated" || !shouldFetchGists) return;
 
       try {
-        let url = "/api/all-gists";
+        let url = "/api/gist-groups"; // Default to all gists from /api/gist-groups
         if (selectedGroupId === "my-gists") {
-          url = "/api/my-gists"; // Add an endpoint for user's gists
+          url = "/api/my-gists";
         } else if (selectedGroupId) {
           url = `/api/gist-groups/${selectedGroupId}/gists`;
         }
@@ -107,10 +104,13 @@ export default function ProfilePage() {
           throw new Error(`Failed to fetch Gists: ${errorText}`);
         }
         const data = await response.json();
-        if (isMounted.current) setGists(data.gists || []);
+        if (isMounted.current) {
+          setGists(data.gists || []);
+          if (selectedGroupId) setGistGroups(data.groups || []); // Update groups if specific group is fetched
+        }
       } catch (error) {
         console.error("Error fetching Gists:", error);
-        if (isMounted.current) setGists(dummyGists);
+        if (isMounted.current) setGists([]);
       }
     };
 
@@ -151,29 +151,31 @@ export default function ProfilePage() {
       alert("Octokit not initialized.");
       return;
     }
-  
+
     console.log("[DELETE] Preparing to delete Gist:", gistId);
     if (!confirm("Are you sure you want to delete this gist?")) {
       console.log("[DELETE] Deletion cancelled by user");
       return;
     }
-  
+
     setShouldFetchGists(false);
     console.log("[DELETE] Disabled Gist fetching during deletion");
-  
+
     try {
       console.log("[DELETE] Sending DELETE request to GitHub for Gist:", gistId);
       const deleteResponse = await octokit.request("DELETE /gists/{gist_id}", {
         gist_id: gistId,
         headers: { "X-GitHub-Api-Version": "2022-11-28" },
       });
-  
+
       if (deleteResponse.status !== 204) {
         throw new Error(`GitHub API returned status ${deleteResponse.status}`);
       }
       console.log("[DELETE] Gist successfully deleted from GitHub");
-  
-      const affectedGroups = gistGroups.filter((group) => group.gistIds?.includes(gistId));
+
+      const affectedGroups = gistGroups.filter((group) =>
+        group.gistIds?.some((gist) => gist.id === gistId)
+      );
       if (affectedGroups.length > 0) {
         console.log("[DELETE] Updating affected groups:", affectedGroups);
         await Promise.all(
@@ -184,7 +186,7 @@ export default function ProfilePage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ gistIdToRemove: gistId }),
             });
-  
+
             if (!response.ok) {
               const contentType = response.headers.get("content-type");
               if (contentType && contentType.includes("application/json")) {
@@ -222,14 +224,14 @@ export default function ProfilePage() {
           })
         );
       }
-  
+
       if (isMounted.current) {
         setGists((prevGists) => prevGists.filter((gist) => gist.id !== gistId));
         console.log("[DELETE] Local Gist state updated");
       }
-  
+
       console.log("[DELETE] Refetching Gists after deletion");
-      const response = await fetch("/api/all-gists", {
+      const response = await fetch("/api/gist-groups", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
@@ -240,9 +242,10 @@ export default function ProfilePage() {
       const data = await response.json();
       if (isMounted.current) {
         setGists(data.gists || []);
+        setGistGroups(data.groups || []);
         console.log("[DELETE] Gists refetched and updated:", data.gists.length);
       }
-  
+
       console.log("[DELETE] Gist deletion completed");
       alert("Gist deleted successfully!");
     } catch (error) {
@@ -314,8 +317,7 @@ export default function ProfilePage() {
                   setGists={setGists}
                   setGistGroups={setGistGroups}
                   setActiveTab={setActiveTab}
-                  githubUsername={githubUsername} // Pass githubUsername here
-
+                  githubUsername={githubUsername}
                 />
               )}
             </div>
