@@ -68,7 +68,8 @@ export default function Home() {
         selectedGroupId={selectedGroupId}
         setSelectedGroupId={setSelectedGroupId}
       />
-      <div className="pt-[72px] relative z-0">
+      <div className="pt-[90px] relative z-0">
+      
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <header className="mb-6">

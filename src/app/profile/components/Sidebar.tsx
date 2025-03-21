@@ -64,22 +64,26 @@ export default function Sidebar({
             >
               All Gists
             </button>
-            {gistGroups.map((group) => (
-              <button
-                key={group.id}
-                onClick={() => {
-                  setSelectedGroupId(group.id);
-                  setIsGroupDropdownOpen(false);
-                }}
-                className={`w-full px-4 py-2 text-left text-sm ${
-                  selectedGroupId === group.id
-                    ? "bg-blue-100 text-blue-600"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {group.name}
-              </button>
-            ))}
+            {gistGroups.length > 0 ? (
+              gistGroups.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => {
+                    setSelectedGroupId(group.id);
+                    setIsGroupDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm ${
+                    selectedGroupId === group.id
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {group.name}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-sm text-gray-500">No groups available</div>
+            )}
           </div>
         )}
       </div>

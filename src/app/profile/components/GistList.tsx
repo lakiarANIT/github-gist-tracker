@@ -28,14 +28,22 @@ interface GistListProps {
   onDeleteGist: (gistId: string) => Promise<void>;
 }
 
-export default function GistList({ gists, selectedGroupId, gistGroups, linkedGist, onDeleteGist }: GistListProps) {
+export default function GistList({
+  gists,
+  selectedGroupId,
+  gistGroups,
+  linkedGist,
+  onDeleteGist,
+}: GistListProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [starredGists, setStarredGists] = useState<Set<string>>(new Set());
   const [expandedGistId, setExpandedGistId] = useState<string | null>(null);
-  const [gistDetailsMap, setGistDetailsMap] = useState<Map<string, LocalGistDetails>>(new Map());
+  const [gistDetailsMap, setGistDetailsMap] = useState<Map<string, LocalGistDetails>>(
+    new Map()
+  );
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +69,9 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
         const okt = new Octokit({ auth: githubToken });
         setOctokit(okt);
 
-        const userResponse = await okt.request("GET /user", { headers: { "X-GitHub-Api-Version": "2022-11-28" } });
+        const userResponse = await okt.request("GET /user", {
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        });
         setGithubUsername(userResponse.data.login);
       } catch (error) {
         console.error("Error in fetchInitialData:", error);
@@ -73,28 +83,24 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
     fetchInitialData();
   }, [session]);
 
-  // Fetch gists for the current page
+  // Fetch gist details for the current page
   useEffect(() => {
     const fetchPageData = async () => {
       if (!octokit || !gists.length) return;
 
       setLoading(true);
       try {
-        const filteredGists = selectedGroupId
-          ? gists.filter((gist) =>
-              gistGroups
-                .find((group) => group.id === selectedGroupId)
-                ?.gistIds?.some((g) => g.id === gist.id)
-            )
-          : gists;
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredGists.length);
-        const currentGists = filteredGists.slice(startIndex, endIndex);
+        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, gists.length);
+        const currentGists = gists.slice(startIndex, endIndex);
 
         type GistResponse = Endpoints["GET /gists/{gist_id}"]["response"];
         const detailsPromises = currentGists.map((gist) =>
           octokit
-            .request("GET /gists/{gist_id}", { gist_id: gist.id, headers: { "X-GitHub-Api-Version": "2022-11-28" } })
+            .request("GET /gists/{gist_id}", {
+              gist_id: gist.id,
+              headers: { "X-GitHub-Api-Version": "2022-11-28" },
+            })
             .then((response: GistResponse) => response)
             .catch((err) => {
               console.error(`Failed to fetch details for gist ${gist.id}:`, err);
@@ -104,7 +110,10 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
 
         const starPromises = currentGists.map((gist) =>
           octokit
-            .request("GET /gists/{gist_id}/star", { gist_id: gist.id, headers: { "X-GitHub-Api-Version": "2022-11-28" } })
+            .request("GET /gists/{gist_id}/star", {
+              gist_id: gist.id,
+              headers: { "X-GitHub-Api-Version": "2022-11-28" },
+            })
             .then((response) => ({ gistId: gist.id, isStarred: response.status === 204 }))
             .catch(() => ({ gistId: gist.id, isStarred: false }))
         );
@@ -119,7 +128,9 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
           .map((res) => [res.data.id as string, res.data as LocalGistDetails]);
         setGistDetailsMap((prev) => new Map([...prev, ...detailsArray]));
 
-        const starredIds = new Set(starResponses.filter((res) => res.isStarred).map((res) => res.gistId));
+        const starredIds = new Set(
+          starResponses.filter((res) => res.isStarred).map((res) => res.gistId)
+        );
         setStarredGists((prev) => new Set([...prev, ...starredIds]));
       } catch (error) {
         console.error("Error in fetchPageData:", error);
@@ -129,7 +140,7 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
       }
     };
     fetchPageData();
-  }, [octokit, gists, currentPage, selectedGroupId, gistGroups]);
+  }, [octokit, gists, currentPage]);
 
   const toggleStar = async (gistId: string) => {
     if (!octokit) return;
@@ -157,55 +168,28 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
   };
 
   const handleNextGist = () => {
-    const filteredGists = selectedGroupId
-      ? gists.filter((gist) =>
-          gistGroups
-            .find((group) => group.id === selectedGroupId)
-            ?.gistIds?.some((g) => g.id === gist.id)
-        )
-      : gists;
-    const currentIndex = filteredGists.findIndex((gist) => gist.id === expandedGistId);
-    if (currentIndex < filteredGists.length - 1) setExpandedGistId(filteredGists[currentIndex + 1].id);
+    const currentIndex = gists.findIndex((gist) => gist.id === expandedGistId);
+    if (currentIndex < gists.length - 1) setExpandedGistId(gists[currentIndex + 1].id);
   };
 
   const handlePreviousGist = () => {
-    const filteredGists = selectedGroupId
-      ? gists.filter((gist) =>
-          gistGroups
-            .find((group) => group.id === selectedGroupId)
-            ?.gistIds?.some((g) => g.id === gist.id)
-        )
-      : gists;
-    const currentIndex = filteredGists.findIndex((gist) => gist.id === expandedGistId);
-    if (currentIndex > 0) setExpandedGistId(filteredGists[currentIndex - 1].id);
+    const currentIndex = gists.findIndex((gist) => gist.id === expandedGistId);
+    if (currentIndex > 0) setExpandedGistId(gists[currentIndex - 1].id);
   };
 
   const isOwner = (gist: Gist): boolean => {
-    return !!githubUsername && gist.owner.login.toLowerCase() === githubUsername.toLowerCase();
+    return !!githubUsername && gist.owner?.login?.toLowerCase() === githubUsername.toLowerCase();
   };
 
   const getPaginatedGists = () => {
-    const filteredGists = selectedGroupId
-      ? gists.filter((gist) =>
-          gistGroups
-            .find((group) => group.id === selectedGroupId)
-            ?.gistIds?.some((g) => g.id === gist.id)
-        )
-      : gists;
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredGists.length);
-    return expandedGistId ? filteredGists.filter((gist) => gist.id === expandedGistId) : filteredGists.slice(startIndex, endIndex);
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, gists.length);
+    return expandedGistId
+      ? gists.filter((gist) => gist.id === expandedGistId)
+      : gists.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(
-    (selectedGroupId
-      ? gists.filter((gist) =>
-          gistGroups
-            .find((group) => group.id === selectedGroupId)
-            ?.gistIds?.some((g) => g.id === gist.id)
-        ).length
-      : gists.length) / ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(gists.length / ITEMS_PER_PAGE);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -221,30 +205,23 @@ export default function GistList({ gists, selectedGroupId, gistGroups, linkedGis
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
-        Gists {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name}` : "from All Groups"}
+        Gists {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name || "Unknown"}` : "from All Groups"}
       </h2>
       {displayedGists.length === 0 ? (
         <p className="text-sm text-gray-600">No gists available yet. Share one!</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
-          {displayedGists.map((gist) => {
+          {displayedGists.map((gist, index) => {
             const isExpanded = expandedGistId === gist.id;
             const isStarred = starredGists.has(gist.id);
             const gistDetails = gistDetailsMap.get(gist.id);
-            const filteredGists = selectedGroupId
-              ? gists.filter((g) =>
-                  gistGroups
-                    .find((group) => group.id === selectedGroupId)
-                    ?.gistIds?.some((g) => g.id === g.id)
-                )
-              : gists;
-            const isFirst = filteredGists.findIndex((g) => g.id === gist.id) === 0;
-            const isLast = filteredGists.findIndex((g) => g.id === gist.id) === filteredGists.length - 1;
+            const isFirst = gists.findIndex((g) => g.id === gist.id) === 0;
+            const isLast = gists.findIndex((g) => g.id === gist.id) === gists.length - 1;
             const relatedGist = gists.find((g) => g.id === linkedGist);
 
             return (
               <div
-                key={gist.id}
+                key={gist.id ? `${gist.id}-${index}` : `gist-${index}`}
                 className={`border border-gray-200 rounded-lg p-4 transition-all duration-300 ${
                   isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md relative"
                 }`}

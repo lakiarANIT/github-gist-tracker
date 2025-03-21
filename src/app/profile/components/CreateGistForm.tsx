@@ -1,3 +1,4 @@
+// src/app/profile/components/CreateGistForm.tsx
 import { FaTrash } from "react-icons/fa";
 import { Gist, GistFile, GistGroup, NewGist } from "../types";
 import { Octokit } from "@octokit/core";
@@ -18,7 +19,8 @@ interface CreateGistFormProps {
   setGists: (gists: Gist[]) => void;
   setGistGroups: (groups: GistGroup[]) => void;
   setActiveTab: (tab: "profile" | "postGist") => void;
-  githubUsername: string; // Add this to identify the owner
+  githubUsername: string;
+  onCreateGroup: (groupName: string) => Promise<void>;
 }
 
 interface GitHubGistFile {
@@ -45,7 +47,8 @@ export default function CreateGistForm({
   setGists,
   setGistGroups,
   setActiveTab,
-  githubUsername, // Add this prop
+  githubUsername,
+  onCreateGroup,
 }: CreateGistFormProps) {
   const router = useRouter();
   const isEditing = !!window.location.pathname.includes("/edit/");
@@ -53,11 +56,9 @@ export default function CreateGistForm({
 
   const createGists = async (description: string, files: GistFile[], isPublic: boolean): Promise<Gist[]> => {
     if (!octokit) throw new Error("Octokit not initialized.");
-
     const createdGists: Gist[] = [];
     for (const file of files) {
       if (!file.filename.trim() || !file.content.trim()) continue;
-
       const gistFiles = { [file.filename]: { content: file.content } };
       const response = await octokit.request("POST /gists", {
         description,
@@ -65,10 +66,10 @@ export default function CreateGistForm({
         files: gistFiles,
         headers: { "X-GitHub-Api-Version": "2022-11-28" },
       });
-
       const data = response.data as {
         id: string;
         html_url: string;
+        forks_url: string;
         description: string | null;
         files: { [key: string]: GitHubGistFile };
         created_at: string;
@@ -77,14 +78,13 @@ export default function CreateGistForm({
         comments: number;
         owner?: { login: string; html_url: string };
       };
-
       if (!data.id || !data.html_url || !data.created_at || !data.updated_at) {
         throw new Error("Invalid Gist response from GitHub API");
       }
-
       createdGists.push({
         id: data.id,
         html_url: data.html_url,
+        forks_url: data.forks_url,
         description: data.description ?? null,
         files: Object.fromEntries(
           Object.entries(data.files || {}).map(([filename, file]) => {
@@ -98,6 +98,7 @@ export default function CreateGistForm({
                 language: file.language || "Text",
                 raw_url: file.raw_url,
                 size: file.size,
+                content: file.content,
               },
             ];
           })
@@ -112,7 +113,6 @@ export default function CreateGistForm({
         },
       });
     }
-
     return createdGists;
   };
 
@@ -122,17 +122,16 @@ export default function CreateGistForm({
     files.forEach((file) => {
       if (file.filename && file.content) gistFiles[file.filename] = { content: file.content };
     });
-
     const response = await octokit.request("PATCH /gists/{gist_id}", {
       gist_id: gistId,
       description,
       files: gistFiles,
       headers: { "X-GitHub-Api-Version": "2022-11-28" },
     });
-
     const data = response.data as {
       id: string;
       html_url: string;
+      forks_url: string;
       description: string | null;
       files: { [key: string]: GitHubGistFile };
       created_at: string;
@@ -141,14 +140,13 @@ export default function CreateGistForm({
       comments: number;
       owner?: { login: string; html_url: string };
     };
-
     if (!data.id || !data.html_url || !data.created_at || !data.updated_at) {
       throw new Error("Invalid Gist response from GitHub API");
     }
-
     return {
       id: data.id,
       html_url: data.html_url,
+      forks_url: data.forks_url,
       description: data.description ?? null,
       files: Object.fromEntries(
         Object.entries(data.files || {}).map(([filename, file]) => {
@@ -162,6 +160,7 @@ export default function CreateGistForm({
               language: file.language || "Text",
               raw_url: file.raw_url,
               size: file.size,
+              content: file.content,
             },
           ];
         })
@@ -177,29 +176,13 @@ export default function CreateGistForm({
     };
   };
 
-  const createGistGroup = async (name: string): Promise<GistGroup> => {
-    const response = await fetch("/api/gist-groups", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, ownerLogin: githubUsername }), // Include ownerLogin
-    });
-    if (!response.ok) throw new Error("Failed to create Gist group");
-    const data = await response.json();
-    return {
-      id: data.group._id.toString(),
-      name: data.group.name,
-      gistIds: data.group.gistIds || [],
-      owner: { login: data.group.ownerLogin }, // Return owner with login
-    };
-  };
-
   const addGistToGroup = async (groupId: string, gistId: string) => {
     const response = await fetch(`/api/gist-groups/${groupId}/gists`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gistId }),
     });
-    if (!response.ok) throw new Error(`Failed to add Gist to group: ${response.statusText}`);
+    if (!response.ok) throw new Error("Failed to add Gist to group");
     const data = await response.json();
     return data.group;
   };
@@ -229,13 +212,11 @@ export default function CreateGistForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const validFiles = newGist.files.filter((file) => file.filename.trim() && file.content.trim());
     if (validFiles.length === 0) {
       alert("Please provide at least one file with a filename and content.");
       return;
     }
-
     try {
       if (isEditing && gistId) {
         const updatedGist = await updateGist(gistId, newGist.description, validFiles);
@@ -243,35 +224,21 @@ export default function CreateGistForm({
         alert("Gist updated successfully!");
       } else {
         const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
-
-        if (newGists.length === 0) {
-          throw new Error("No Gists were created.");
-        }
-
-        let groupId: string = selectedGroupId;
+        if (newGists.length === 0) throw new Error("No Gists were created.");
+        let groupId = selectedGroupId;
         if (!selectedGroupId && newGroupName) {
-          const newGroup = await createGistGroup(newGroupName);
-          groupId = newGroup.id;
-          setGistGroups([...gistGroups, newGroup]);
-          setSelectedGroupId(newGroup.id);
+          await onCreateGroup(newGroupName);
+          groupId = selectedGroupId;
         } else if (!selectedGroupId) {
           alert("Please select a group or enter a new group name.");
           return;
         }
-
+        if (!groupId) throw new Error("Group ID is invalid or undefined.");
         await Promise.all(newGists.map((gist) => addGistToGroup(groupId, gist.id)));
-
-        const response = await fetch(`/api/gist-groups/${groupId}/gists`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!response.ok) throw new Error("Failed to fetch updated Gists");
-        const data = await response.json();
-        setGists(data.gists || []);
-
+        const updatedGists = [...newGists, ...gists.filter((g) => !newGists.some((ng) => ng.id === g.id))];
+        setGists(updatedGists);
         alert(`Created ${newGists.length} Gist(s) and added to group successfully!`);
       }
-
       setNewGist({
         description: "",
         files: [{ filename: "", content: "", language: "Text" }],
@@ -319,11 +286,11 @@ export default function CreateGistForm({
                 onChange={(e) => handleFileChange(index, "language", e.target.value)}
                 className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               >
-                <option value="Text">Text</option>
-                <option value="Ruby">Ruby</option>
-                <option value="Python">Python</option>
-                <option value="JavaScript">JavaScript</option>
-                <option value="TypeScript">TypeScript</option>
+                {["Text", "Ruby", "Python", "JavaScript", "TypeScript"].map((lang) => (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                ))}
               </select>
               {index === 0 && (
                 <select
@@ -331,7 +298,9 @@ export default function CreateGistForm({
                   onChange={(e) => setLinkedGist(e.target.value || null)}
                   className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 >
-                  <option value="">Link to another Gist (optional)</option>
+                  <option key="none" value="">
+                    Link to another Gist (optional)
+                  </option>
                   {gists.map((gist) => (
                     <option key={gist.id} value={gist.id}>
                       {gist.description || "Untitled Gist"}
@@ -364,8 +333,12 @@ export default function CreateGistForm({
             onChange={(e) => setNewGist({ ...newGist, isPublic: e.target.value === "public" })}
             className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
           >
-            <option value="secret">Create secret gists</option>
-            <option value="public">Create public gists</option>
+            <option key="secret" value="secret">
+              Create secret gists
+            </option>
+            <option key="public" value="public">
+              Create public gists
+            </option>
           </select>
         </div>
         {!isEditing && (
@@ -376,20 +349,33 @@ export default function CreateGistForm({
               onChange={(e) => setSelectedGroupId(e.target.value)}
               className="w-full p-2 mb-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
             >
-              <option value="">Select a group (optional)</option>
+              <option key="none" value="">
+                Select a group (optional)
+              </option>
               {gistGroups.map((group) => (
                 <option key={group.id} value={group.id}>
                   {group.name}
                 </option>
               ))}
             </select>
-            <input
-              type="text"
-              placeholder="Or enter new group name..."
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Or enter new group name..."
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+                className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              />
+              {newGroupName && (
+                <button
+                  type="button"
+                  onClick={() => onCreateGroup(newGroupName)}
+                  className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+                >
+                  Create Group
+                </button>
+              )}
+            </div>
           </div>
         )}
         <button

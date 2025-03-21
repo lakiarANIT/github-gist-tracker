@@ -1,10 +1,11 @@
+// src/app/profile/[gistId]/edit/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
-import { Gist, NewGist } from "../../types";
+import { Gist, GistGroup, NewGist } from "../../types";
 import CreateGistForm from "../../components/CreateGistForm";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
@@ -16,81 +17,121 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
     files: [{ filename: "", content: "", language: "Text" }],
     isPublic: false,
   });
-  const [gistGroups, setGistGroups] = useState<any[]>([]);
+  const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [newGroupName, setNewGroupName] = useState("");
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
+  const [gists, setGists] = useState<Gist[]>([]); // Added to store all gists for linking
   const [octokit, setOctokit] = useState<Octokit | null>(null);
-  const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [githubUsername, setGithubUsername] = useState<string>("");
 
   useEffect(() => {
     const initialize = async () => {
       const { gistId } = await params;
-      if (status === "authenticated" && session) {
-        try {
-          const tokenResponse = await fetch("/api/github-token", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          });
-          const tokenData = await tokenResponse.json();
-          if (!tokenResponse.ok) throw new Error(tokenData.error || "Failed to fetch GitHub token");
+      if (status !== "authenticated" || !session) return;
 
-          const { githubToken } = tokenData;
-          if (githubToken) {
-            const octo = new Octokit({ auth: githubToken });
-            setOctokit(octo);
+      try {
+        const tokenResponse = await fetch("/api/github-token", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!tokenResponse.ok) throw new Error("Failed to fetch GitHub token");
+        const tokenData = await tokenResponse.json();
+        const { githubToken } = tokenData;
 
-            // Fetch authenticated user's GitHub username
-            const userResponse = await octo.request("GET /user", {
-              headers: { "X-GitHub-Api-Version": "2022-11-28" },
-            });
-            setGithubUsername(userResponse.data.login);
+        if (!githubToken) throw new Error("GitHub token not found");
 
-            // Fetch the gist
-            const gistResponse = await octo.request("GET /gists/{gist_id}", {
-              gist_id: gistId,
-              headers: { "X-GitHub-Api-Version": "2022-11-28" },
-            });
-            const gistData = gistResponse.data;
-            setGist(gistData as Gist);
-            setNewGist({
-              description: gistData.description || "",
-              files: Object.entries(gistData.files || {}).map(([filename, file]) => {
-                if (!file) {
-                  throw new Error(`File data for ${filename} is null`);
-                }
-                return {
-                  filename: file.filename || filename,
-                  content: file.content || "",
-                  language: file.language || "Text",
-                };
-              }),
-              isPublic: gistData.public || false,
-            });
+        const octo = new Octokit({ auth: githubToken });
+        setOctokit(octo);
 
-            // Fetch gist groups
-            const groupsResponse = await fetch("/api/gist-groups", {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-            });
-            if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
-            const groupsData = await groupsResponse.json();
-            const fetchedGroups = (groupsData.groups || []).map((group: any) => ({
-              id: group._id.toString(),
-              name: group.name,
-            }));
-            setGistGroups(fetchedGroups);
-          }
-        } catch (error) {
-          console.error("Error initializing:", error);
-          alert("Failed to load gist. Please try again.");
-          router.push("/profile");
-        }
+        const userResponse = await octo.request("GET /user", {
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        });
+        setGithubUsername(userResponse.data.login);
+
+        const gistResponse = await octo.request("GET /gists/{gist_id}", {
+          gist_id: gistId,
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        });
+        const gistData = gistResponse.data as Gist;
+        setGist(gistData);
+        setNewGist({
+          description: gistData.description || "",
+          files: Object.entries(gistData.files || {}).map(([filename, file]) => ({
+            filename: file?.filename || filename,
+            content: file?.content || "",
+            language: file?.language || "Text",
+          })),
+          isPublic: !!gistData.public,
+        });
+
+        const groupsResponse = await fetch("/api/gist-groups", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
+        const groupsData = await groupsResponse.json();
+        setGistGroups(groupsData.groups || []);
+        setGists(groupsData.gists || []); // Fetch all gists for linking
+
+        // Find the group this gist belongs to (if any)
+        const groupWithGist = (groupsData.groups || []).find((group: GistGroup) =>
+          group.gistIds?.some((g) => g.id === gistId)
+        );
+        if (groupWithGist) setSelectedGroupId(groupWithGist.id);
+      } catch (error) {
+        console.error("Error initializing:", error);
+        alert("Failed to load gist. Please try again.");
+        router.push("/profile");
       }
     };
 
     initialize();
   }, [status, session, params]);
+
+  const handleCreateGroup = async (groupName: string) => {
+    if (!groupName.trim()) {
+      alert("Group name cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/gist-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName }),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to create group");
+      const { group } = await response.json();
+
+      setGistGroups((prev) => [...prev, group]);
+      setSelectedGroupId(group.id); // Auto-select the new group
+      setNewGroupName(""); // Clear input
+      await fetchGroupsAndGists(); // Refresh data
+    } catch (error) {
+      console.error("Error creating group:", error);
+      alert("Failed to create group. Please try again.");
+    }
+  };
+
+  const fetchGroupsAndGists = async () => {
+    try {
+      const groupsResponse = await fetch("/api/gist-groups", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
+      const groupsData = await groupsResponse.json();
+      setGistGroups(groupsData.groups || []);
+      setGists(groupsData.gists || []);
+    } catch (error) {
+      console.error("Error fetching groups and gists:", error);
+    }
+  };
 
   if (status === "loading" || !gist || !githubUsername) {
     return (
@@ -100,7 +141,7 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
     );
   }
 
-  if (status === "unauthenticated" || githubUsername !== gist.owner.login) {
+  if (status === "unauthenticated" || githubUsername !== gist.owner?.login) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <p className="text-lg text-gray-700">You are not authorized to edit this gist.</p>
@@ -122,13 +163,13 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
           setNewGroupName={setNewGroupName}
           linkedGist={linkedGist}
           setLinkedGist={setLinkedGist}
-          gists={[]}
+          gists={gists}
           octokit={octokit}
-          setGists={() => {}}
+          setGists={setGists}
           setGistGroups={setGistGroups}
           setActiveTab={() => router.push("/profile")}
-          githubUsername={githubUsername} // Pass githubUsername here
-
+          githubUsername={githubUsername}
+          onCreateGroup={handleCreateGroup}
         />
       </div>
     </div>

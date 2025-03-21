@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [gists, setGists] = useState<Gist[]>([]);
   const [publicGists, setPublicGists] = useState<Gist[]>([]);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // "" for All Gists
   const [activeTab, setActiveTab] = useState<"profile" | "postGist">("profile");
   const [newGist, setNewGist] = useState<NewGist>({
     description: "",
@@ -34,104 +34,168 @@ export default function ProfilePage() {
 
   useEffect(() => {
     isMounted.current = true;
+
     const initializeOctokitAndGroups = async () => {
-      if (status === "authenticated" && session?.user?.email) {
-        try {
-          const tokenResponse = await fetch("/api/github-token", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-          });
-          if (!tokenResponse.ok) {
-            const errorText = await tokenResponse.text();
-            throw new Error(`Failed to fetch GitHub token: ${errorText}`);
-          }
-          const tokenData = await tokenResponse.json();
-          const { githubToken } = tokenData;
-          if (githubToken) {
-            const okt = new Octokit({ auth: githubToken });
-            setOctokit(okt);
-            const userResponse = await okt.request("GET /user", {
-              headers: { "X-GitHub-Api-Version": "2022-11-28" },
-            });
-            if (isMounted.current) setGithubUsername(userResponse.data.login);
-          } else {
-            alert("Please link your GitHub account to create Gists.");
-          }
+      if (status !== "authenticated" || !session?.user?.email) return;
 
-          // Fetch user's gists
-          const groupsResponse = await fetch("/api/gist-groups", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-          });
-          if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
-          const groupsData = await groupsResponse.json();
-          if (isMounted.current) {
-            setGistGroups(groupsData.groups || []);
-            setGists(groupsData.gists || []);
-          }
+      try {
+        const tokenResponse = await fetch("/api/github-token", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!tokenResponse.ok) throw new Error("Failed to fetch GitHub token");
+        const tokenData = await tokenResponse.json();
+        const { githubToken } = tokenData;
 
-          // Fetch public gists
-          const publicResponse = await fetch("/api/public-gist-groups", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          });
-          if (!publicResponse.ok) throw new Error("Failed to fetch public gists");
-          const publicData = await publicResponse.json();
-          if (isMounted.current) setPublicGists(publicData.gists || []);
-        } catch (error) {
-          console.error("Error initializing:", error);
-          if (isMounted.current) alert("Failed to initialize. Please try again.");
+        if (!githubToken) {
+          if (isMounted.current) alert("Please link your GitHub account to create Gists.");
+          return;
         }
+
+        const okt = new Octokit({ auth: githubToken });
+        setOctokit(okt);
+
+        const userResponse = await okt.request("GET /user", {
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        });
+        if (isMounted.current) setGithubUsername(userResponse.data.login);
+
+        await fetchGroupsAndGists();
+      } catch (error) {
+        console.error("Error initializing:", error);
+        if (isMounted.current) alert("Failed to initialize. Please try again.");
+      }
+
+      if (status === "authenticated" && !session?.user?.location) {
+        setShowLocationPrompt(true);
       }
     };
 
     initializeOctokitAndGroups();
-
-    if (status === "authenticated" && !session?.user?.location) {
-      setShowLocationPrompt(true);
-    }
 
     return () => {
       isMounted.current = false;
     };
   }, [status, session]);
 
+  const fetchGroupsAndGists = async () => {
+    try {
+      const groupsResponse = await fetch("/api/gist-groups", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
+      const groupsData = await groupsResponse.json();
+      console.log("fetchGroupsAndGists - Response:", groupsData); // Debug
+      if (isMounted.current) {
+        setGistGroups(groupsData.groups || []);
+        setGists(groupsData.gists || []);
+      }
+
+      const publicResponse = await fetch("/api/public-gist-groups", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!publicResponse.ok) throw new Error("Failed to fetch public gists");
+      const publicData = await publicResponse.json();
+      console.log("fetchPublicGists - Response:", publicData); // Debug
+      if (isMounted.current) setPublicGists(publicData.gists || []);
+    } catch (error) {
+      console.error("Error fetching groups and gists:", error);
+      if (isMounted.current) {
+        setGists([]);
+        setGistGroups([]);
+      }
+    }
+  };
+
   useEffect(() => {
-    const fetchGists = async () => {
-      if (!isMounted.current || status !== "authenticated" || !shouldFetchGists) return;
+    const fetchGistsForGroup = async () => {
+      if (!isMounted.current || status !== "authenticated" || !shouldFetchGists || !octokit) return;
 
       try {
-        let url = "/api/gist-groups";
-        if (selectedGroupId === "my-gists") {
+        let url;
+        if (selectedGroupId === "") {
+          url = "/api/gist-groups"; // All Gists
+        } else if (selectedGroupId === "my-gists") {
           url = "/api/my-gists";
-        } else if (selectedGroupId) {
-          url = `/api/gist-groups/${selectedGroupId}/gists`;
+        } else {
+          url = `/api/gist-groups/${selectedGroupId}/gists`; // Specific group
         }
 
+        console.log(`Fetching from: ${url}`); // Debug
         const response = await fetch(url, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to fetch Gists: ${errorText}`);
-        }
+        if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
         const data = await response.json();
-        if (isMounted.current) {
-          setGists(data.gists || []);
-          if (selectedGroupId) setGistGroups(data.groups || []);
+        console.log(`Response from ${url}:`, data); // Debug
+
+        let gistIds = [];
+        if (selectedGroupId === "" && data.groups) {
+          // For "All Gists," aggregate gistIds from all groups
+          gistIds = data.groups.flatMap((group: GistGroup) => group.gistIds || []);
+          if (isMounted.current) setGistGroups(data.groups);
+        } else {
+          gistIds = data.gists || []; // For specific group or my-gists
         }
+
+        // Fetch full gist details from GitHub
+        const gistPromises = gistIds.map((gistId: string) =>
+          octokit.request("GET /gists/{gist_id}", {
+            gist_id: gistId,
+            headers: { "X-GitHub-Api-Version": "2022-11-28" },
+          })
+        );
+        const gistResponses = await Promise.allSettled(gistPromises);
+        const fullGists = gistResponses
+          .filter((res): res is PromiseFulfilledResult<any> => res.status === "fulfilled")
+          .map((res) => res.value.data)
+          .filter((gist, index, self) => gist.id && self.findIndex((g) => g.id === gist.id) === index);
+
+        if (isMounted.current) setGists(fullGists);
       } catch (error) {
         console.error("Error fetching Gists:", error);
         if (isMounted.current) setGists([]);
       }
     };
 
-    fetchGists();
-  }, [selectedGroupId, status, shouldFetchGists]);
+    fetchGistsForGroup();
+  }, [selectedGroupId, status, shouldFetchGists, octokit]);
+
+  const handleCreateGroup = async (groupName: string) => {
+    if (!groupName.trim()) {
+      alert("Group name cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/gist-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName }),
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Failed to create group");
+      const { group } = await response.json();
+
+      if (isMounted.current) {
+        setGistGroups((prev) => [...prev, group]);
+        setSelectedGroupId(group.id); // Auto-select the new group
+        setNewGroupName("");
+        setIsGroupDropdownOpen(false);
+        await fetchGroupsAndGists(); // Refresh all data
+      }
+    } catch (error) {
+      console.error("Error creating group:", error);
+      alert("Failed to create group. Please try again.");
+    }
+  };
 
   const requestLocation = async () => {
     if (navigator.geolocation) {
@@ -151,6 +215,7 @@ export default function ProfilePage() {
             }
           } catch (error) {
             console.error("Error updating location:", error);
+            alert("Failed to update location.");
           }
         },
         (error) => {
@@ -165,121 +230,56 @@ export default function ProfilePage() {
 
   const handleDeleteGist = async (gistId: string) => {
     if (!octokit) {
-      console.log("[DELETE] Octokit not initialized, aborting deletion");
-      alert("Octokit not initialized.");
+      alert("GitHub integration not initialized.");
       return;
     }
 
-    console.log("[DELETE] Preparing to delete Gist:", gistId);
-    if (!confirm("Are you sure you want to delete this gist?")) {
-      console.log("[DELETE] Deletion cancelled by user");
-      return;
-    }
+    if (!confirm("Are you sure you want to delete this gist?")) return;
 
     setShouldFetchGists(false);
-    console.log("[DELETE] Disabled Gist fetching during deletion");
 
     try {
-      console.log("[DELETE] Sending DELETE request to GitHub for Gist:", gistId);
-      const deleteResponse = await octokit.request("DELETE /gists/{gist_id}", {
+      await octokit.request("DELETE /gists/{gist_id}", {
         gist_id: gistId,
         headers: { "X-GitHub-Api-Version": "2022-11-28" },
       });
-
-      if (deleteResponse.status !== 204) {
-        throw new Error(`GitHub API returned status ${deleteResponse.status}`);
-      }
-      console.log("[DELETE] Gist successfully deleted from GitHub");
 
       const affectedGroups = gistGroups.filter((group) =>
         group.gistIds?.some((gist) => gist.id === gistId)
       );
       if (affectedGroups.length > 0) {
-        console.log("[DELETE] Updating affected groups:", affectedGroups);
         await Promise.all(
           affectedGroups.map(async (group) => {
-            console.log("[DELETE] Patching group:", group.id);
             const response = await fetch(`/api/gist-groups/${group.id}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ gistIdToRemove: gistId }),
               credentials: "include",
             });
-
             if (!response.ok) {
-              const contentType = response.headers.get("content-type");
-              if (contentType && contentType.includes("application/json")) {
-                const errorData = await response.json();
-                if (response.status === 404) {
-                  console.log(`[DELETE] Group ${group.id} not found, removing from local state`);
-                  if (isMounted.current) {
-                    setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
-                  }
-                  return;
-                }
-                throw new Error(`Failed to update group ${group.id}: ${errorData.error || response.statusText}`);
-              } else {
-                const text = await response.text();
-                console.log("[DELETE] Non-JSON response from server (likely 404 page):", text.slice(0, 200));
-                if (response.status === 404) {
-                  console.log(`[DELETE] Group ${group.id} endpoint returned 404, treating as not found`);
-                  if (isMounted.current) {
-                    setGistGroups((prevGroups) => prevGroups.filter((g) => g.id !== group.id));
-                  }
-                  return;
-                }
-                throw new Error(`Failed to update group ${group.id}: Received non-JSON response (status ${response.status})`);
+              if (response.status === 404) {
+                setGistGroups((prev) => prev.filter((g) => g.id !== group.id));
+                return;
               }
+              throw new Error("Failed to update group");
             }
             const data = await response.json();
-            console.log("[DELETE] Group updated successfully:", group.id, data.group);
-            if (isMounted.current) {
-              setGistGroups((prevGroups) =>
-                prevGroups.map((g) =>
-                  g.id === group.id ? { ...g, gistIds: data.group.gistIds } : g
-                )
-              );
-            }
+            setGistGroups((prev) =>
+              prev.map((g) => (g.id === group.id ? { ...g, gistIds: data.group.gistIds } : g))
+            );
           })
         );
       }
 
-      if (isMounted.current) {
-        setGists((prevGists) => prevGists.filter((gist) => gist.id !== gistId));
-        setPublicGists((prevPublic) => prevPublic.filter((gist) => gist.id !== gistId)); // Update public list too
-        console.log("[DELETE] Local Gist state updated");
-      }
-
-      console.log("[DELETE] Refetching Gists after deletion");
-      const response = await fetch("/api/gist-groups", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to refetch Gists: ${errorText}`);
-      }
-      const data = await response.json();
-      if (isMounted.current) {
-        setGists(data.gists || []);
-        setGistGroups(data.groups || []);
-        console.log("[DELETE] Gists refetched and updated:", data.gists.length);
-      }
-
-      console.log("[DELETE] Gist deletion completed");
+      setGists((prev) => prev.filter((gist) => gist.id !== gistId));
+      setPublicGists((prev) => prev.filter((gist) => gist.id !== gistId));
+      await fetchGroupsAndGists();
       alert("Gist deleted successfully!");
     } catch (error) {
-      console.error("[DELETE] Error deleting Gist:", error);
-      let errorMessage = "Failed to delete gist.";
-      if (error instanceof Error) {
-        errorMessage += ` ${error.message}`;
-      }
-      console.log("[DELETE] Displaying error to user:", errorMessage);
-      alert(errorMessage);
+      console.error("Error deleting Gist:", error);
+      alert("Failed to delete gist.");
     } finally {
       setShouldFetchGists(true);
-      console.log("[DELETE] Re-enabled Gist fetching");
     }
   };
 
@@ -295,7 +295,11 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <p className="text-lg text-gray-700">
-          Please <a href="/auth/login" className="text-blue-600 hover:underline font-medium">sign in</a> to view your profile.
+          Please{" "}
+          <a href="/auth/login" className="text-blue-600 hover:underline font-medium">
+            sign in
+          </a>{" "}
+          to view your profile.
         </p>
       </div>
     );
@@ -345,6 +349,7 @@ export default function ProfilePage() {
                   setGistGroups={setGistGroups}
                   setActiveTab={setActiveTab}
                   githubUsername={githubUsername}
+                  onCreateGroup={handleCreateGroup}
                 />
               )}
             </div>
