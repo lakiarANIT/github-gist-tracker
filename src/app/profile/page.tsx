@@ -91,7 +91,7 @@ export default function ProfilePage() {
       console.log("fetchGroupsAndGists - Response:", groupsData); // Debug
       if (isMounted.current) {
         setGistGroups(groupsData.groups || []);
-        setGists(groupsData.gists || []);
+        // Don’t set gists here; let fetchGistsForGroup handle it
       }
 
       const publicResponse = await fetch("/api/public-gist-groups", {
@@ -105,8 +105,8 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Error fetching groups and gists:", error);
       if (isMounted.current) {
-        setGists([]);
         setGistGroups([]);
+        setGists([]);
       }
     }
   };
@@ -116,36 +116,57 @@ export default function ProfilePage() {
       if (!isMounted.current || status !== "authenticated" || !shouldFetchGists || !octokit) return;
 
       try {
-        let url;
+        let gistIds: string[] = [];
+
         if (selectedGroupId === "") {
-          url = "/api/gist-groups"; // All Gists
+          // For "All Gists," aggregate all gistIds from gistGroups
+          console.log("Aggregating all gistIds from groups for 'All Gists'"); // Debug
+          gistIds = Array.from(
+            new Set(
+              gistGroups.flatMap((group) =>
+                (group.gistIds || []).map((gist) =>
+                  typeof gist === "string" ? gist : gist.id
+                )
+              )
+            )
+          ); // Handle both string and object cases
+          if (gistIds.length === 0) {
+            console.log("No group gists found; fetching all user gists from GitHub"); // Debug
+            const userGistsResponse = await octokit.request("GET /gists", {
+              headers: { "X-GitHub-Api-Version": "2022-11-28" },
+            });
+            gistIds = userGistsResponse.data.map((gist) => gist.id);
+          }
         } else if (selectedGroupId === "my-gists") {
-          url = "/api/my-gists";
+          console.log("Fetching from: /api/my-gists"); // Debug
+          const response = await fetch("/api/my-gists", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error("Failed to fetch from /api/my-gists");
+          const data = await response.json();
+          gistIds = (data.gists || []).map((gist: any) =>
+            typeof gist === "string" ? gist : gist.id
+          );
         } else {
-          url = `/api/gist-groups/${selectedGroupId}/gists`; // Specific group
+          console.log(`Fetching from: /api/gist-groups/${selectedGroupId}/gists`); // Debug
+          const response = await fetch(`/api/gist-groups/${selectedGroupId}/gists`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error(`Failed to fetch from /api/gist-groups/${selectedGroupId}/gists`);
+          const data = await response.json();
+          gistIds = (data.gists || []).map((gist: any) =>
+            typeof gist === "string" ? gist : gist.id
+          );
         }
 
-        console.log(`Fetching from: ${url}`); // Debug
-        const response = await fetch(url, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-        if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
-        const data = await response.json();
-        console.log(`Response from ${url}:`, data); // Debug
-
-        let gistIds = [];
-        if (selectedGroupId === "" && data.groups) {
-          // For "All Gists," aggregate gistIds from all groups
-          gistIds = data.groups.flatMap((group: GistGroup) => group.gistIds || []);
-          if (isMounted.current) setGistGroups(data.groups);
-        } else {
-          gistIds = data.gists || []; // For specific group or my-gists
-        }
+        console.log("Gist IDs to fetch:", gistIds); // Debug
 
         // Fetch full gist details from GitHub
-        const gistPromises = gistIds.map((gistId: string) =>
+        const gistPromises = gistIds.map((gistId) =>
           octokit.request("GET /gists/{gist_id}", {
             gist_id: gistId,
             headers: { "X-GitHub-Api-Version": "2022-11-28" },
@@ -165,7 +186,7 @@ export default function ProfilePage() {
     };
 
     fetchGistsForGroup();
-  }, [selectedGroupId, status, shouldFetchGists, octokit]);
+  }, [selectedGroupId, status, shouldFetchGists, octokit, gistGroups]); // All dependencies included
 
   const handleCreateGroup = async (groupName: string) => {
     if (!groupName.trim()) {
@@ -245,7 +266,7 @@ export default function ProfilePage() {
       });
 
       const affectedGroups = gistGroups.filter((group) =>
-        group.gistIds?.some((gist) => gist.id === gistId)
+        group.gistIds?.some((gist) => (typeof gist === "string" ? gist : gist.id) === gistId)
       );
       if (affectedGroups.length > 0) {
         await Promise.all(
