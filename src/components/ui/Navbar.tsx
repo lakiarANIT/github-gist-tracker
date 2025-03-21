@@ -7,6 +7,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { FaFolder, FaChevronDown } from "react-icons/fa";
 import { Gist, GistGroup } from "src/app/profile/types";
 import React from "react";
+import { usePathname } from "next/navigation"; // Add this import
 
 interface NavbarProps {
   gistGroups: GistGroup[];
@@ -20,6 +21,8 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isGistsOpen, setIsGistsOpen] = useState(false);
   const { data: session, status } = useSession();
+  const pathname = usePathname(); // Get current route
+  const isHomePage = pathname === "/"; // Check if on home page
 
   const sortedGroups = React.useMemo(() => {
     const sorted = [...gistGroups].sort((a, b) => a.name.localeCompare(b.name));
@@ -40,62 +43,66 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
           <Link href="/" className="text-xl font-bold hover:text-purple-300 transition-colors whitespace-nowrap">
             GGT
           </Link>
-          <div className="relative">
-            <button
-              onClick={() => setIsGistsOpen(!isGistsOpen)}
-              className="text-base hover:text-purple-300 transition-colors flex items-center gap-1 whitespace-nowrap"
-            >
-              Gists
-              <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${isGistsOpen ? "rotate-180" : ""}`} />
-            </button>
+          
+          {/* Only show Gists dropdown on home page */}
+          {isHomePage && (
+            <div className="relative">
+              <button
+                onClick={() => setIsGistsOpen(!isGistsOpen)}
+                className="text-base hover:text-purple-300 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                Gists
+                <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${isGistsOpen ? "rotate-180" : ""}`} />
+              </button>
 
-            {isGistsOpen && (
-              <div className="absolute left-0 mt-2 w-64 bg-white text-gray-900 rounded-md shadow-lg z-10 max-h-[70vh] overflow-y-auto">
-                <button
-                  onClick={() => {
-                    setSelectedGroupId("");
-                    setIsGistsOpen(false);
-                  }}
-                  className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${
-                    selectedGroupId === "" ? "bg-purple-100 text-purple-900" : "hover:bg-gray-100"
-                  }`}
-                >
-                  <FaFolder className="w-4 h-4 mr-2" />
-                  <span>All Gists</span>
-                  <span className="ml-2 text-xs text-gray-500">({gists.length})</span>
-                </button>
+              {isGistsOpen && (
+                <div className="absolute left-0 mt-2 w-64 bg-white text-gray-900 rounded-md shadow-lg z-10 max-h-[70vh] overflow-y-auto">
+                  <button
+                    onClick={() => {
+                      setSelectedGroupId("");
+                      setIsGistsOpen(false);
+                    }}
+                    className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${
+                      selectedGroupId === "" ? "bg-purple-100 text-purple-900" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <FaFolder className="w-4 h-4 mr-2" />
+                    <span>All Gists</span>
+                    <span className="ml-2 text-xs text-gray-500">({gists.length})</span>
+                  </button>
 
-                {letters.map((letter) => (
-                  <div key={letter}>
-                    <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border-t border-gray-200">
-                      {letter}
-                    </h3>
-                    {sortedGroups[letter].map((group) => (
-                      <button
-                        key={group.id}
-                        onClick={() => {
-                          setSelectedGroupId(group.id);
-                          setIsGistsOpen(false);
-                        }}
-                        className={`w-full px-4 py-2 text-left text-sm flex items-center ${
-                          selectedGroupId === group.id ? "bg-purple-100 text-purple-900" : "hover:bg-gray-100"
-                        }`}
-                      >
-                        <FaFolder className="w-4 h-4 mr-2" />
-                        <div className="truncate flex-1">
-                          <span className="font-medium">{group.name}</span>
-                          <span className="ml-2 text-xs text-gray-500">
-                            ({group.gistIds?.length ?? 0})
-                          </span>
-                          <span className="block text-xs text-gray-600 truncate">@{group.owner.login}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {letters.map((letter) => (
+                    <div key={letter}>
+                      <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border-t border-gray-200">
+                        {letter}
+                      </h3>
+                      {sortedGroups[letter].map((group) => (
+                        <button
+                          key={group.id}
+                          onClick={() => {
+                            setSelectedGroupId(group.id);
+                            setIsGistsOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center ${
+                            selectedGroupId === group.id ? "bg-purple-100 text-purple-900" : "hover:bg-gray-100"
+                          }`}
+                        >
+                          <FaFolder className="w-4 h-4 mr-2" />
+                          <div className="truncate flex-1">
+                            <span className="font-medium">{group.name}</span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({group.gistIds?.length ?? 0})
+                            </span>
+                            <span className="block text-xs text-gray-600 truncate">@{group.owner.login}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-6">
