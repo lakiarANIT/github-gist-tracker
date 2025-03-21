@@ -8,6 +8,7 @@ import { Octokit } from "@octokit/core";
 import { cache } from "react";
 
 // Ensure User model is registered
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 mongoose.models.User || mongoose.model("User", UserModel.schema);
 
 // Raw type for GistGroup from database
@@ -21,6 +22,7 @@ interface RawGistGroup {
 }
 
 // In-memory cache
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cachedData: { groups: any[]; gists: any[] } | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 let lastCachedTime: number | null = null;

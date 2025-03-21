@@ -77,6 +77,7 @@ export async function GET(req: Request) {
     console.log("[API/all-gists] GitHub token fetch successful");
   
     const tokenData = await tokenResponse.json().catch((error) => {
+      console.error("[API/all-gists] Failed to parse JSON from /api/github-token:", error);
       const responseText = tokenResponse.text();
       console.error("[API/all-gists] Invalid JSON from /api/github-token:", responseText);
       throw new Error("Invalid response from token endpoint");

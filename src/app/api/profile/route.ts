@@ -58,7 +58,7 @@ export const PUT = async (request: Request) => {
 
     const { name, email, bio, password, avatar: avatarUrl } = fields; // Extract avatar from fields
     const avatarFile = files.avatar; // Extract avatar from files
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;

@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET(req: Request) {
+  console.log("[API/github-token] Starting GET request");
   const session = await getServerSession(authOptions);
   if (!session || !session.user) {
     console.log("No session found in /api/github-token");

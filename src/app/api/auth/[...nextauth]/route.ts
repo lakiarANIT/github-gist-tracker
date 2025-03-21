@@ -5,7 +5,6 @@ import GitHubProvider, { GithubProfile } from "next-auth/providers/github";
 import { connectDB } from "@lib/database";
 import UserModel from "@models/User";
 import bcrypt from "bcrypt";
-import { NextResponse } from "next/server";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -33,6 +32,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async authorize(credentials): Promise<any> {
         if (!credentials?.email || !credentials?.password) return null;
 
