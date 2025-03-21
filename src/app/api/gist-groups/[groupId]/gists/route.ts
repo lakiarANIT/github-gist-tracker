@@ -1,7 +1,7 @@
 // File: src/app/api/gist-groups/[groupId]/gists/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@app/api/auth/[...nextauth]/route";
+import { authOptions } from "@lib/authOptions";
 import { connectDB } from "@lib/database";
 import GistGroup from "@models/GistGroup"; // Default import for the model
 import mongoose from "mongoose";

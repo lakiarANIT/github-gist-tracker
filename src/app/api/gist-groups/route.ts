@@ -1,7 +1,7 @@
 // File: /app/api/gist-groups/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@lib/authOptions";
 import { connectDB } from "@lib/database";
 import GistGroup from "@models/GistGroup";
 import { Octokit } from "@octokit/core";

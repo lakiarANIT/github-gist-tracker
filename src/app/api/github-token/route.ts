@@ -1,7 +1,7 @@
 // File: /app/api/github-token/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@lib/authOptions";
 
 export async function GET(req: Request) {
   console.log("[API/github-token] Starting GET request");

@@ -1,6 +1,6 @@
 // /app/api/profile/route.ts
 import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/route";
+import { authOptions } from "@lib/authOptions";
 import { connectDB } from "@lib/database";
 import UserModel from "@models/User";
 import { NextResponse } from "next/server";
