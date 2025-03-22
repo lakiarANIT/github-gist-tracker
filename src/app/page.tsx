@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { Octokit } from "@octokit/core";
 import PublicGistList from "src/components/home/PublicGistList";
 import Navbar from "src/components/ui/Navbar";
-import { Gist, GistGroup } from "src/app/profile/types";
+import { Gist, GistGroup } from "src/types/types";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -15,6 +15,8 @@ export default function Home() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [typewriterText, setTypewriterText] = useState("");
 
   useEffect(() => {
     const initialize = async () => {
@@ -24,6 +26,12 @@ export default function Home() {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
+        
+        if (response.status === 429) {
+          setIsRateLimited(true);
+          throw new Error("Rate limit exceeded");
+        }
+        
         if (!response.ok) throw new Error("Failed to fetch public data");
         const data = await response.json();
         setGistGroups(data.groups || []);
@@ -36,6 +44,10 @@ export default function Home() {
             headers: { "Content-Type": "application/json" },
             credentials: "include",
           });
+          if (tokenResponse.status === 429) {
+            setIsRateLimited(true);
+            throw new Error("Rate limit exceeded");
+          }
           if (!tokenResponse.ok) throw new Error("Failed to fetch GitHub token");
           const tokenData = await tokenResponse.json();
           const { githubToken } = tokenData;
@@ -52,10 +64,45 @@ export default function Home() {
     initialize();
   }, [status, session]);
 
-  if (loading) {
+  // Typewriter effect
+  useEffect(() => {
+    if (loading || isRateLimited) {
+      const messages = isRateLimited 
+        ? "Rate limit reached, please wait..."
+        : "Loading gists, please wait...";
+      
+      let i = 0;
+      const speed = 100; // Typing speed in milliseconds
+      
+      const type = () => {
+        if (i < messages.length) {
+          setTypewriterText(messages.substring(0, i + 1));
+          i++;
+          setTimeout(type, speed);
+        } else {
+          // Reset and start over after a pause
+          setTimeout(() => {
+            i = 0;
+            setTypewriterText("");
+            type();
+          }, 2000);
+        }
+      };
+      
+      type();
+    }
+  }, [loading, isRateLimited]);
+
+  if (loading || isRateLimited) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="w-10 h-10 border-4 border-t-blue-600 border-gray-200 rounded-full animate-spin"></div>
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-t-blue-600 border-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-lg font-mono text-gray-700">
+            {typewriterText}
+            <span className="animate-blink">|</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -69,7 +116,6 @@ export default function Home() {
         setSelectedGroupId={setSelectedGroupId}
       />
       <div className="pt-[90px] relative z-0">
-      
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl mx-auto">
             <header className="mb-6">
