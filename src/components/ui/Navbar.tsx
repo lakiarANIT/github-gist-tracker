@@ -7,22 +7,29 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { FaFolder, FaChevronDown } from "react-icons/fa";
 import { Gist, GistGroup } from "src/types/types";
 import React from "react";
-import { usePathname } from "next/navigation"; // Add this import
+import { usePathname } from "next/navigation";
 
 interface NavbarProps {
-  gistGroups: GistGroup[];
-  gists: Gist[];
-  selectedGroupId: string;
-  setSelectedGroupId: (id: string) => void;
+  gistGroups?: GistGroup[]; // Made optional
+  gists?: Gist[]; // Made optional
+  selectedGroupId?: string; // Made optional
+  setSelectedGroupId?: (id: string) => void; // Made optional
+  isGistList?: boolean; // New optional prop to control gist features
 }
 
-export default function Navbar({ gistGroups, gists, selectedGroupId, setSelectedGroupId }: NavbarProps) {
+export default function Navbar({
+  gistGroups = [],
+  gists = [],
+  selectedGroupId = "",
+  setSelectedGroupId = () => {},
+  isGistList = false,
+}: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isGistsOpen, setIsGistsOpen] = useState(false);
   const { data: session, status } = useSession();
-  const pathname = usePathname(); // Get current route
-  const isHomePage = pathname === "/"; // Check if on home page
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
 
   const sortedGroups = React.useMemo(() => {
     const sorted = [...gistGroups].sort((a, b) => a.name.localeCompare(b.name));
@@ -43,9 +50,9 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
           <Link href="/" className="text-xl font-bold hover:text-purple-300 transition-colors whitespace-nowrap">
             GGT
           </Link>
-          
-          {/* Only show Gists dropdown on home page */}
-          {isHomePage && (
+
+          {/* Show Gists dropdown only if isGistList is true and on home page */}
+          {isGistList && isHomePage && (
             <div className="relative">
               <button
                 onClick={() => setIsGistsOpen(!isGistsOpen)}
@@ -93,7 +100,7 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
                             <span className="ml-2 text-xs text-gray-500">
                               ({group.gistIds?.length ?? 0})
                             </span>
-                            <span className="block text-xs text-gray-600 truncate">@{group.owner.login}</span>
+                            <span className="block text-xs text-gray-600 truncate">@{group.owner?.login || "unknown"}</span>
                           </div>
                         </button>
                       ))}
@@ -106,6 +113,7 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Search button - optional, keeping it for consistency but can remove if not needed */}
           {isSearchOpen ? (
             <input
               type="text"
@@ -133,23 +141,33 @@ export default function Navbar({ gistGroups, gists, selectedGroupId, setSelected
 
           <div className={`${isOpen ? "flex" : "hidden"} sm:flex flex-col sm:flex-row items-center gap-4 absolute sm:static top-14 left-0 w-full sm:w-auto bg-purple-900 sm:bg-transparent p-4 sm:p-0 shadow-lg sm:shadow-none`}>
             {session ? (
-              <Link href="/profile" className="text-base hover:text-purple-300 transition-colors">
-                Profile
-              </Link>
+              <>
+                <Link href="/profile" className="text-base hover:text-purple-300 transition-colors">
+                  Profile
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="bg-purple-700 text-sm text-white hover:bg-purple-600 hover:shadow-md px-4 py-1.5 rounded-full active:scale-95 transition-all duration-300 whitespace-nowrap"
+                >
+                  Sign Out
+                </button>
+              </>
             ) : (
-              <Link
-                href="/auth/register"
-                className="text-sm bg-transparent border-2 border-purple-400 text-purple-300 hover:bg-purple-400 hover:text-purple-900 px-4 py-1.5 rounded-md active:scale-95 transition-all duration-300 whitespace-nowrap"
-              >
-                Sign Up
-              </Link>
+              <>
+                <Link
+                  href="/auth/register"
+                  className="text-sm bg-transparent border-2 border-purple-400 text-purple-300 hover:bg-purple-400 hover:text-purple-900 px-4 py-1.5 rounded-md active:scale-95 transition-all duration-300 whitespace-nowrap"
+                >
+                  Sign Up
+                </Link>
+                <button
+                  onClick={() => signIn()}
+                  className="bg-purple-700 text-sm text-white hover:bg-purple-600 hover:shadow-md px-4 py-1.5 rounded-full active:scale-95 transition-all duration-300 whitespace-nowrap"
+                >
+                  Sign In
+                </button>
+              </>
             )}
-            <button
-              onClick={() => (session ? signOut() : signIn())}
-              className="bg-purple-700 text-sm text-white hover:bg-purple-600 hover:shadow-md px-4 py-1.5 rounded-full active:scale-95 transition-all duration-300 whitespace-nowrap"
-            >
-              {session ? "Sign Out" : "Sign In"}
-            </button>
           </div>
         </div>
       </div>

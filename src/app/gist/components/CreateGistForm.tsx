@@ -189,49 +189,6 @@ export default function CreateGistForm({
     return data.group;
   };
 
-  const handleAddGroup = async () => {
-    if (!newGroupName.trim()) {
-      alert("Please enter a group name.");
-      return;
-    }
-    try {
-      const response = await fetch("/api/gist-groups/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newGroupName }),
-        credentials: "include",
-      });
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error(`Server returned non-JSON response: ${text.slice(0, 100)}...`);
-      }
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Unauthorized - Please sign in");
-        }
-        if (response.status === 400) {
-          throw new Error(responseData.error || "Group name is required");
-        }
-        throw new Error(responseData.error || "Failed to create group");
-      }
-
-      const newGroup = responseData.group;
-      setGistGroups((prev) => [...prev, newGroup]);
-      setSelectedGroupId(newGroup._id); // Use _id from MongoDB
-      setNewGroupName("");
-      alert("Group added successfully!");
-    } catch (error) {
-      console.error("POST error:", error);
-      alert(`Failed to add group: ${error instanceof Error ? error.message : "Server error"}`);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validFiles = newGist.files.filter((file) => file.filename.trim() && file.content.trim());
@@ -246,18 +203,7 @@ export default function CreateGistForm({
         setGists((prev) => prev.map((g) => (g.id === updatedGist.id ? updatedGist : g)));
         alert("Gist updated successfully!");
       } else {
-        let groupId: string = selectedGroupId || "";
-
-        if (newGroupName.trim()) {
-          const newGroup = await onCreateGroup(newGroupName);
-          if (!newGroup?.id) { // Use _id here too
-            throw new Error("Failed to create group: No ID returned");
-          }
-          groupId = newGroup.id;
-          setGistGroups((prev) => [...prev, newGroup]);
-          setSelectedGroupId(newGroup.id);
-          setNewGroupName("");
-        }
+        const groupId = selectedGroupId || "";
 
         const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
         if (newGists.length === 0) throw new Error("No Gists were created.");
@@ -281,7 +227,7 @@ export default function CreateGistForm({
       }
 
       setNewGist({ description: "", files: [{ filename: "", content: "", language: "Text" }], isPublic: false });
-      setNewGroupName("");
+      setNewGroupName(""); // Reset even though not used for adding here
       setLinkedGist(null);
       setActiveTab("profile");
     } catch (error: any) {
@@ -398,36 +344,18 @@ export default function CreateGistForm({
         {!isEditing && (
           <div className="mb-4 bg-white shadow-sm border border-gray-200 rounded-lg p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">Add to Gist Group</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <select
-                value={selectedGroupId}
-                onChange={(e) => setSelectedGroupId(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
-              >
-                <option value="">Select a group (optional)</option>
-                {gistGroups.map((group) => (
-                  <option key={group.id} value={group.id}> {/* Use _id instead of id */}
-                    {group.name}
-                  </option>
-                ))}
-              </select>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="New group name..."
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddGroup}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  Add Group
-                </button>
-              </div>
-            </div>
+            <select
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
+            >
+              <option value="">Select a group (optional)</option>
+              {gistGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
           </div>
         )}
         <button
