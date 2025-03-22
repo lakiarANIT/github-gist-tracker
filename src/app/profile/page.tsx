@@ -1,15 +1,127 @@
+// ProfilePage.tsx
 "use client";
 
 import { useSession } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
 import { Octokit } from "@octokit/core";
-import { Gist, GistGroup, NewGist } from "./types";
-import Sidebar from "./components/Sidebar";
+import { Gist, GistGroup, NewGist } from "src/types/types";
 import ProfileView from "./components/ProfileView";
-import CreateGistForm from "./components/CreateGistForm";
-import GistList from "./components/GistList";
+import CreateGistForm from "@app/gist/components/CreateGistForm";
+import GistList from "@app/gist/components/GistList";
 import PublicGistList from "src/components/home/PublicGistList";
 import Navbar from "@components/ui/Navbar";
+import { FaFolder } from "react-icons/fa";
+
+const GroupSelector = ({
+  gistGroups,
+  selectedGroupId,
+  setSelectedGroupId,
+  setShowCreateGist,
+}: {
+  gistGroups: GistGroup[];
+  selectedGroupId: string;
+  setSelectedGroupId: (id: string) => void;
+  setShowCreateGist: (show: boolean) => void;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const nonEmptyGroups = gistGroups.filter((group) => (group.gistIds?.length ?? 0) > 0);
+  const sortedGroups = [...nonEmptyGroups].sort((a, b) => a.name.localeCompare(b.name));
+  const visibleGroups = isExpanded ? sortedGroups : sortedGroups.slice(0, 5);
+
+  return (
+    <div className="w-full">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-3 py-2 text-left text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-t-md"
+      >
+        {isExpanded ? "Hide Groups" : "Show Groups"}
+      </button>
+      <div className={`w-full ${isExpanded ? "h-[18rem] overflow-y-auto" : "h-auto"}`}>
+        <button
+          onClick={() => setSelectedGroupId("")}
+          className={`w-full px-3 py-2 text-left text-sm ${
+            selectedGroupId === "" ? "bg-blue-100 text-blue-600" : "text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          All Gists
+        </button>
+        {visibleGroups.length > 0 ? (
+          visibleGroups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setSelectedGroupId(group.id)}
+              className={`w-full px-3 py-2 text-left text-sm ${
+                selectedGroupId === group.id ? "bg-blue-100 text-blue-600" : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {group.name}
+            </button>
+          ))
+        ) : (
+          <div className="px-3 py-2 text-sm text-gray-500">No groups with gists</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const GroupList = ({
+  gistGroups,
+  selectedGroupId,
+  setSelectedGroupId,
+}: {
+  gistGroups: GistGroup[];
+  selectedGroupId: string;
+  setSelectedGroupId: (id: string) => void;
+}) => {
+  const nonEmptyGroups = gistGroups.filter((group) => (group.gistIds?.length ?? 0) > 0);
+  const sortedGroups = [...nonEmptyGroups].sort((a, b) => a.name.localeCompare(b.name));
+  const groupedGroups = sortedGroups.reduce((acc, group) => {
+    const firstLetter = group.name.charAt(0).toUpperCase();
+    if (!acc[firstLetter]) acc[firstLetter] = [];
+    acc[firstLetter].push(group);
+    return acc;
+  }, {} as Record<string, GistGroup[]>);
+
+  const letters = Object.keys(groupedGroups).sort();
+
+  return (
+    <div className="w-full max-h-[50vh] overflow-y-auto bg-white rounded-md shadow-sm border border-gray-200">
+      <button
+        onClick={() => setSelectedGroupId("")}
+        className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${
+          selectedGroupId === "" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
+        }`}
+      >
+        <FaFolder className="w-4 h-4 mr-2" />
+        <span>All Gists</span>
+      </button>
+      {letters.map((letter) => (
+        <div key={letter}>
+          <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border-t border-gray-200">
+            {letter}
+          </h3>
+          {groupedGroups[letter].map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setSelectedGroupId(group.id)}
+              className={`w-full px-4 py-2 text-left text-sm flex items-center ${
+                selectedGroupId === group.id ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
+              }`}
+            >
+              <FaFolder className="w-4 h-4 mr-2" />
+              <div className="truncate flex-1">
+                <span className="font-medium">{group.name}</span>
+                <span className="ml-2 text-xs text-gray-500">({group.gistIds?.length ?? 0})</span>
+                <span className="block text-xs text-gray-600 truncate">@{group.owner?.login || "unknown"}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -17,8 +129,8 @@ export default function ProfilePage() {
   const [gists, setGists] = useState<Gist[]>([]);
   const [publicGists, setPublicGists] = useState<Gist[]>([]);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // "" for All Gists
-  const [activeTab, setActiveTab] = useState<"profile" | "postGist">("profile");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // "" means "All Gists"
+  const [showCreateGist, setShowCreateGist] = useState(false);
   const [newGist, setNewGist] = useState<NewGist>({
     description: "",
     files: [{ filename: "", content: "", language: "Text" }],
@@ -27,7 +139,6 @@ export default function ProfilePage() {
   const [newGroupName, setNewGroupName] = useState("");
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
-  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [shouldFetchGists, setShouldFetchGists] = useState(true);
   const [githubUsername, setGithubUsername] = useState<string>("");
   const isMounted = useRef(true);
@@ -88,11 +199,7 @@ export default function ProfilePage() {
       });
       if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
       const groupsData = await groupsResponse.json();
-      console.log("fetchGroupsAndGists - Response:", groupsData); // Debug
-      if (isMounted.current) {
-        setGistGroups(groupsData.groups || []);
-        // Don’t set gists here; let fetchGistsForGroup handle it
-      }
+      if (isMounted.current) setGistGroups(groupsData.groups || []);
 
       const publicResponse = await fetch("/api/public-gist-groups", {
         method: "GET",
@@ -100,7 +207,6 @@ export default function ProfilePage() {
       });
       if (!publicResponse.ok) throw new Error("Failed to fetch public gists");
       const publicData = await publicResponse.json();
-      console.log("fetchPublicGists - Response:", publicData); // Debug
       if (isMounted.current) setPublicGists(publicData.gists || []);
     } catch (error) {
       console.error("Error fetching groups and gists:", error);
@@ -117,28 +223,12 @@ export default function ProfilePage() {
 
       try {
         let gistIds: string[] = [];
-
         if (selectedGroupId === "") {
-          // For "All Gists," aggregate all gistIds from gistGroups
-          console.log("Aggregating all gistIds from groups for 'All Gists'"); // Debug
-          gistIds = Array.from(
-            new Set(
-              gistGroups.flatMap((group) =>
-                (group.gistIds || []).map((gist) =>
-                  typeof gist === "string" ? gist : gist.id
-                )
-              )
-            )
-          ); // Handle both string and object cases
-          if (gistIds.length === 0) {
-            console.log("No group gists found; fetching all user gists from GitHub"); // Debug
-            const userGistsResponse = await octokit.request("GET /gists", {
-              headers: { "X-GitHub-Api-Version": "2022-11-28" },
-            });
-            gistIds = userGistsResponse.data.map((gist) => gist.id);
-          }
+          const userGistsResponse = await octokit.request("GET /gists", {
+            headers: { "X-GitHub-Api-Version": "2022-11-28" },
+          });
+          gistIds = userGistsResponse.data.map((gist: any) => gist.id);
         } else if (selectedGroupId === "my-gists") {
-          console.log("Fetching from: /api/my-gists"); // Debug
           const response = await fetch("/api/my-gists", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -146,11 +236,8 @@ export default function ProfilePage() {
           });
           if (!response.ok) throw new Error("Failed to fetch from /api/my-gists");
           const data = await response.json();
-          gistIds = (data.gists || []).map((gist: any) =>
-            typeof gist === "string" ? gist : gist.id
-          );
+          gistIds = (data.gists || []).map((gist: any) => (typeof gist === "string" ? gist : gist.id));
         } else {
-          console.log(`Fetching from: /api/gist-groups/${selectedGroupId}/gists`); // Debug
           const response = await fetch(`/api/gist-groups/${selectedGroupId}/gists`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -158,14 +245,9 @@ export default function ProfilePage() {
           });
           if (!response.ok) throw new Error(`Failed to fetch from /api/gist-groups/${selectedGroupId}/gists`);
           const data = await response.json();
-          gistIds = (data.gists || []).map((gist: any) =>
-            typeof gist === "string" ? gist : gist.id
-          );
+          gistIds = (data.gists || []).map((gist: any) => (typeof gist === "string" ? gist : gist.id));
         }
 
-        console.log("Gist IDs to fetch:", gistIds); // Debug
-
-        // Fetch full gist details from GitHub
         const gistPromises = gistIds.map((gistId) =>
           octokit.request("GET /gists/{gist_id}", {
             gist_id: gistId,
@@ -186,37 +268,7 @@ export default function ProfilePage() {
     };
 
     fetchGistsForGroup();
-  }, [selectedGroupId, status, shouldFetchGists, octokit, gistGroups]); // All dependencies included
-
-  const handleCreateGroup = async (groupName: string) => {
-    if (!groupName.trim()) {
-      alert("Group name cannot be empty");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/gist-groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: groupName }),
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Failed to create group");
-      const { group } = await response.json();
-
-      if (isMounted.current) {
-        setGistGroups((prev) => [...prev, group]);
-        setSelectedGroupId(group.id); // Auto-select the new group
-        setNewGroupName("");
-        setIsGroupDropdownOpen(false);
-        await fetchGroupsAndGists(); // Refresh all data
-      }
-    } catch (error) {
-      console.error("Error creating group:", error);
-      alert("Failed to create group. Please try again.");
-    }
-  };
+  }, [selectedGroupId, status, shouldFetchGists, octokit]); // Removed gistGroups since it's not used
 
   const requestLocation = async () => {
     if (navigator.geolocation) {
@@ -304,10 +356,49 @@ export default function ProfilePage() {
     }
   };
 
+  const handleCreateGroup = async (groupName: string): Promise<GistGroup> => {
+    if (!groupName.trim()) {
+      throw new Error("Group name cannot be empty");
+    }
+
+    try {
+      const response = await fetch("/api/gist-groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: groupName }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create group: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const group: GistGroup = data.group;
+
+      if (!group || !group.id) {
+        throw new Error("API did not return a valid group with an ID");
+      }
+
+      if (isMounted.current) {
+        setGistGroups((prev) => [...prev, group]);
+        setSelectedGroupId(group.id);
+        setNewGroupName("");
+        await fetchGroupsAndGists();
+      }
+
+      return group;
+    } catch (error) {
+      console.error("Error creating group:", error);
+      throw new Error(`Failed to create group: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-8 h-8 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
+        <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -315,7 +406,7 @@ export default function ProfilePage() {
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-lg text-gray-700">
+        <p className="text-base sm:text-lg text-gray-700">
           Please{" "}
           <a href="/auth/login" className="text-blue-600 hover:underline font-medium">
             sign in
@@ -327,54 +418,63 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
-      <Navbar
-        gistGroups={gistGroups}
-        gists={gists}
-        selectedGroupId={selectedGroupId}
-        setSelectedGroupId={setSelectedGroupId}
-      />
-      <div className="max-w-5xl mx-auto flex gap-6">
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
+    <div className="min-h-screen bg-gray-100">
+      <div className="fixed top-0 left-0 w-full z-20">
+        <Navbar
           gistGroups={gistGroups}
+          gists={gists}
           selectedGroupId={selectedGroupId}
           setSelectedGroupId={setSelectedGroupId}
-          isGroupDropdownOpen={isGroupDropdownOpen}
-          setIsGroupDropdownOpen={setIsGroupDropdownOpen}
         />
-        <div className="flex-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div className="p-6">
-              {activeTab === "profile" ? (
-                <ProfileView
-                  showLocationPrompt={showLocationPrompt}
-                  setShowLocationPrompt={setShowLocationPrompt}
-                  requestLocation={requestLocation}
-                />
-              ) : (
-                <CreateGistForm
-                  newGist={newGist}
-                  setNewGist={setNewGist}
-                  gistGroups={gistGroups}
-                  selectedGroupId={selectedGroupId}
-                  setSelectedGroupId={setSelectedGroupId}
-                  newGroupName={newGroupName}
-                  setNewGroupName={setNewGroupName}
-                  linkedGist={linkedGist}
-                  setLinkedGist={setLinkedGist}
-                  gists={gists}
-                  octokit={octokit}
-                  setGists={setGists}
-                  setGistGroups={setGistGroups}
-                  setActiveTab={setActiveTab}
-                  githubUsername={githubUsername}
-                  onCreateGroup={handleCreateGroup}
-                />
-              )}
+      </div>
+      <div className="pt-[4rem] max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6">
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+          <ProfileView
+            showLocationPrompt={showLocationPrompt}
+            setShowLocationPrompt={setShowLocationPrompt}
+            requestLocation={requestLocation}
+          />
+        </div>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+          <button
+            onClick={() => setShowCreateGist(!showCreateGist)}
+            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+          >
+            {showCreateGist ? "Hide Create Gist" : "Create Gist"}
+          </button>
+          {showCreateGist && (
+            <div className="mt-4">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Create a New Gist</h2>
+              <CreateGistForm
+                newGist={newGist}
+                setNewGist={setNewGist}
+                gistGroups={gistGroups}
+                selectedGroupId={selectedGroupId}
+                setSelectedGroupId={setSelectedGroupId}
+                newGroupName={newGroupName}
+                setNewGroupName={setNewGroupName}
+                linkedGist={linkedGist}
+                setLinkedGist={setLinkedGist}
+                gists={gists}
+                octokit={octokit}
+                setGists={setGists}
+                setGistGroups={setGistGroups}
+                setActiveTab={() => {}} // No-op
+                githubUsername={githubUsername}
+                onCreateGroup={handleCreateGroup}
+              />
             </div>
-          </div>
+          )}
+        </div>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Groups</h2>
+          <GroupList
+            gistGroups={gistGroups}
+            selectedGroupId={selectedGroupId}
+            setSelectedGroupId={setSelectedGroupId}
+          />
+        </div>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto">
           <GistList
             gists={gists}
             selectedGroupId={selectedGroupId}
@@ -382,6 +482,8 @@ export default function ProfilePage() {
             linkedGist={linkedGist}
             onDeleteGist={handleDeleteGist}
           />
+        </div>
+        <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto mb-4 sm:mb-6">
           <PublicGistList
             gists={publicGists}
             selectedGroupId={selectedGroupId}

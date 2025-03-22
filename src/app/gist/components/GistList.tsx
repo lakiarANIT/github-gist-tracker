@@ -3,9 +3,9 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Octokit } from "@octokit/core";
 import { Endpoints } from "@octokit/types";
-import GistCard from "./GistCard";
+import GistCard from "@components/gist/GistCard";
 import GistDetailsExpanded from "./GistDetailsExpanded";
-import { Gist, GistGroup } from "../types";
+import { Gist, GistGroup } from "src/types/types";
 
 interface LocalGistDetails {
   id: string;
@@ -41,24 +41,25 @@ export default function GistList({
   const [loading, setLoading] = useState(true);
   const [starredGists, setStarredGists] = useState<Set<string>>(new Set());
   const [expandedGistId, setExpandedGistId] = useState<string | null>(null);
-  const [gistDetailsMap, setGistDetailsMap] = useState<Map<string, LocalGistDetails>>(
-    new Map()
-  );
+  const [gistDetailsMap, setGistDetailsMap] = useState<Map<string, LocalGistDetails>>(new Map());
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const ITEMS_PER_PAGE = 6;
 
-  // Fetch initial data
   useEffect(() => {
     const fetchInitialData = async () => {
-      if (!session) return;
+      if (!session || !session.user) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const tokenResponse = await fetch("/api/github-token", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
         if (!tokenResponse.ok) throw new Error("Failed to fetch GitHub token");
         const tokenData = await tokenResponse.json();
@@ -72,7 +73,9 @@ export default function GistList({
         const userResponse = await okt.request("GET /user", {
           headers: { "X-GitHub-Api-Version": "2022-11-28" },
         });
-        setGithubUsername(userResponse.data.login);
+        const username = userResponse.data.login;
+        setGithubUsername(username);
+        console.log("Fetched GitHub username:", username); // Debug
       } catch (error) {
         console.error("Error in fetchInitialData:", error);
         setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -83,7 +86,6 @@ export default function GistList({
     fetchInitialData();
   }, [session]);
 
-  // Fetch gist details for the current page
   useEffect(() => {
     const fetchPageData = async () => {
       if (!octokit || !gists.length) return;
@@ -178,7 +180,10 @@ export default function GistList({
   };
 
   const isOwner = (gist: Gist): boolean => {
-    return !!githubUsername && gist.owner?.login?.toLowerCase() === githubUsername.toLowerCase();
+    const ownerLogin = gist.owner?.login?.toLowerCase();
+    const userLogin = githubUsername?.toLowerCase();
+    console.log("Checking isOwner:", { ownerLogin, userLogin, result: !!userLogin && ownerLogin === userLogin }); // Debug
+    return !!userLogin && ownerLogin === userLogin;
   };
 
   const getPaginatedGists = () => {
@@ -197,20 +202,20 @@ export default function GistList({
     setLoading(true);
   };
 
-  if (loading) return <div>Loading gists...</div>;
-  if (error) return <div className="text-red-500">Error: {error}</div>;
+  if (loading) return <div className="text-gray-600 text-sm sm:text-base">Loading gists...</div>;
+  if (error) return <div className="text-red-500 text-sm sm:text-base">Error: {error}</div>;
 
   const displayedGists = getPaginatedGists();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">
+    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 max-w-full mx-auto">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
         Gists {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name || "Unknown"}` : "from All Groups"}
       </h2>
       {displayedGists.length === 0 ? (
-        <p className="text-sm text-gray-600">No gists available yet. Share one!</p>
+        <p className="text-xs sm:text-sm text-gray-600">No gists available yet. Share one!</p>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
           {displayedGists.map((gist, index) => {
             const isExpanded = expandedGistId === gist.id;
             const isStarred = starredGists.has(gist.id);
@@ -222,8 +227,8 @@ export default function GistList({
             return (
               <div
                 key={gist.id ? `${gist.id}-${index}` : `gist-${index}`}
-                className={`border border-gray-200 rounded-lg p-4 transition-all duration-300 ${
-                  isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md relative"
+                className={`border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-300 ${
+                  isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
                 }`}
               >
                 {!isExpanded && (
@@ -238,7 +243,7 @@ export default function GistList({
                     relatedGistUrl={relatedGist?.html_url}
                     onToggleStar={toggleStar}
                     onExpandGist={handleExpandGist}
-                    onEditGist={(gistId) => router.push(`/profile/edit/${gistId}`)}
+                    onEditGist={(gistId) => router.push(`/gist/${gistId}`)}
                     onDeleteGist={onDeleteGist}
                   />
                 )}
@@ -260,20 +265,20 @@ export default function GistList({
         </div>
       )}
       {gists.length > ITEMS_PER_PAGE && totalPages > 1 && (
-        <div className="mt-6 flex justify-between items-center">
+        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
           >
             Previous
           </button>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-3 py-1 rounded ${
+                className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
                   currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
@@ -284,7 +289,7 @@ export default function GistList({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
           >
             Next
           </button>

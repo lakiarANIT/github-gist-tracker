@@ -1,13 +1,15 @@
-// src/app/profile/components/CreateGistForm.tsx
+// CreateGistForm.tsx
 import { FaTrash } from "react-icons/fa";
-import { Gist, GistFile, GistGroup, NewGist } from "../types";
+import { Gist, GistFile, GistGroup, NewGist } from "src/types/types";
 import { Octokit } from "@octokit/core";
 import { useRouter } from "next/navigation";
+import { Dispatch, SetStateAction } from "react";
 
 interface CreateGistFormProps {
   newGist: NewGist;
   setNewGist: (gist: NewGist) => void;
   gistGroups: GistGroup[];
+  setGistGroups: Dispatch<SetStateAction<GistGroup[]>>;
   selectedGroupId: string;
   setSelectedGroupId: (id: string) => void;
   newGroupName: string;
@@ -16,11 +18,10 @@ interface CreateGistFormProps {
   setLinkedGist: (id: string | null) => void;
   gists: Gist[];
   octokit: Octokit | null;
-  setGists: (gists: Gist[]) => void;
-  setGistGroups: (groups: GistGroup[]) => void;
+  setGists: Dispatch<SetStateAction<Gist[]>>;
   setActiveTab: (tab: "profile" | "postGist") => void;
   githubUsername: string;
-  onCreateGroup: (groupName: string) => Promise<void>;
+  onCreateGroup: (groupName: string) => Promise<GistGroup>;
 }
 
 interface GitHubGistFile {
@@ -36,6 +37,7 @@ export default function CreateGistForm({
   newGist,
   setNewGist,
   gistGroups,
+  setGistGroups,
   selectedGroupId,
   setSelectedGroupId,
   newGroupName,
@@ -45,7 +47,6 @@ export default function CreateGistForm({
   gists,
   octokit,
   setGists,
-  setGistGroups,
   setActiveTab,
   githubUsername,
   onCreateGroup,
@@ -177,14 +178,116 @@ export default function CreateGistForm({
   };
 
   const addGistToGroup = async (groupId: string, gistId: string) => {
+    if (!groupId) throw new Error("Group ID is undefined");
     const response = await fetch(`/api/gist-groups/${groupId}/gists`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gistId }),
     });
-    if (!response.ok) throw new Error("Failed to add Gist to group");
+    if (!response.ok) throw new Error(`Failed to add Gist to group: ${response.statusText}`);
     const data = await response.json();
     return data.group;
+  };
+
+  const handleAddGroup = async () => {
+    if (!newGroupName.trim()) {
+      alert("Please enter a group name.");
+      return;
+    }
+    try {
+      const response = await fetch("/api/gist-groups/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newGroupName }),
+        credentials: "include",
+      });
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Non-JSON response received:", text);
+        throw new Error(`Server returned non-JSON response: ${text.slice(0, 100)}...`);
+      }
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized - Please sign in");
+        }
+        if (response.status === 400) {
+          throw new Error(responseData.error || "Group name is required");
+        }
+        throw new Error(responseData.error || "Failed to create group");
+      }
+
+      const newGroup = responseData.group;
+      setGistGroups((prev) => [...prev, newGroup]);
+      setSelectedGroupId(newGroup._id); // Use _id from MongoDB
+      setNewGroupName("");
+      alert("Group added successfully!");
+    } catch (error) {
+      console.error("POST error:", error);
+      alert(`Failed to add group: ${error instanceof Error ? error.message : "Server error"}`);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const validFiles = newGist.files.filter((file) => file.filename.trim() && file.content.trim());
+    if (validFiles.length === 0) {
+      alert("Please provide at least one file with a filename and content.");
+      return;
+    }
+
+    try {
+      if (isEditing && gistId) {
+        const updatedGist = await updateGist(gistId, newGist.description, validFiles);
+        setGists((prev) => prev.map((g) => (g.id === updatedGist.id ? updatedGist : g)));
+        alert("Gist updated successfully!");
+      } else {
+        let groupId: string = selectedGroupId || "";
+
+        if (newGroupName.trim()) {
+          const newGroup = await onCreateGroup(newGroupName);
+          if (!newGroup?.id) { // Use _id here too
+            throw new Error("Failed to create group: No ID returned");
+          }
+          groupId = newGroup.id;
+          setGistGroups((prev) => [...prev, newGroup]);
+          setSelectedGroupId(newGroup.id);
+          setNewGroupName("");
+        }
+
+        const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
+        if (newGists.length === 0) throw new Error("No Gists were created.");
+
+        if (groupId) {
+          await Promise.all(newGists.map((gist) => addGistToGroup(groupId, gist.id)));
+        }
+
+        setGists((prev) => [
+          ...newGists,
+          ...prev.filter((gist: Gist) => !newGists.some((newGist: Gist) => newGist.id === gist.id)),
+        ]);
+
+        alert(
+          `Created ${newGists.length} Gist(s)${
+            groupId
+              ? ` and added to group "${gistGroups.find((g) => g.id === groupId)?.name || "selected group"}"`
+              : ""
+          } successfully!`
+        );
+      }
+
+      setNewGist({ description: "", files: [{ filename: "", content: "", language: "Text" }], isPublic: false });
+      setNewGroupName("");
+      setLinkedGist(null);
+      setActiveTab("profile");
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(`Failed to ${isEditing ? "update" : "create"} Gist(s): ${error.message || "An unexpected error occurred."}`);
+    }
   };
 
   const handleAddFile = () => {
@@ -208,49 +311,6 @@ export default function CreateGistForm({
       i === index ? { ...file, [field]: value } : file
     );
     setNewGist({ ...newGist, files: updatedFiles });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const validFiles = newGist.files.filter((file) => file.filename.trim() && file.content.trim());
-    if (validFiles.length === 0) {
-      alert("Please provide at least one file with a filename and content.");
-      return;
-    }
-    try {
-      if (isEditing && gistId) {
-        const updatedGist = await updateGist(gistId, newGist.description, validFiles);
-        setGists(gists.map((g) => (g.id === updatedGist.id ? updatedGist : g)));
-        alert("Gist updated successfully!");
-      } else {
-        const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
-        if (newGists.length === 0) throw new Error("No Gists were created.");
-        let groupId = selectedGroupId;
-        if (!selectedGroupId && newGroupName) {
-          await onCreateGroup(newGroupName);
-          groupId = selectedGroupId;
-        } else if (!selectedGroupId) {
-          alert("Please select a group or enter a new group name.");
-          return;
-        }
-        if (!groupId) throw new Error("Group ID is invalid or undefined.");
-        await Promise.all(newGists.map((gist) => addGistToGroup(groupId, gist.id)));
-        const updatedGists = [...newGists, ...gists.filter((g) => !newGists.some((ng) => ng.id === g.id))];
-        setGists(updatedGists);
-        alert(`Created ${newGists.length} Gist(s) and added to group successfully!`);
-      }
-      setNewGist({
-        description: "",
-        files: [{ filename: "", content: "", language: "Text" }],
-        isPublic: false,
-      });
-      setNewGroupName("");
-      setLinkedGist(null);
-      setActiveTab("profile");
-    } catch (error: any) {
-      console.error("Error:", error);
-      alert(`Failed to ${isEditing ? "update" : "create"} Gist(s): ${error.message || "An unexpected error occurred."}`);
-    }
   };
 
   return (
@@ -298,9 +358,7 @@ export default function CreateGistForm({
                   onChange={(e) => setLinkedGist(e.target.value || null)}
                   className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 >
-                  <option key="none" value="">
-                    Link to another Gist (optional)
-                  </option>
+                  <option value="">Link to another Gist (optional)</option>
                   {gists.map((gist) => (
                     <option key={gist.id} value={gist.id}>
                       {gist.description || "Untitled Gist"}
@@ -333,48 +391,42 @@ export default function CreateGistForm({
             onChange={(e) => setNewGist({ ...newGist, isPublic: e.target.value === "public" })}
             className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
           >
-            <option key="secret" value="secret">
-              Create secret gists
-            </option>
-            <option key="public" value="public">
-              Create public gists
-            </option>
+            <option value="secret">Create secret gists</option>
+            <option value="public">Create public gists</option>
           </select>
         </div>
         {!isEditing && (
-          <div className="mb-4">
-            <label className="block text-sm text-gray-700 mb-1">Add to Gist Group</label>
-            <select
-              value={selectedGroupId}
-              onChange={(e) => setSelectedGroupId(e.target.value)}
-              className="w-full p-2 mb-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-            >
-              <option key="none" value="">
-                Select a group (optional)
-              </option>
-              {gistGroups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Or enter new group name..."
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              {newGroupName && (
+          <div className="mb-4 bg-white shadow-sm border border-gray-200 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Add to Gist Group</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <select
+                value={selectedGroupId}
+                onChange={(e) => setSelectedGroupId(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
+              >
+                <option value="">Select a group (optional)</option>
+                {gistGroups.map((group) => (
+                  <option key={group.id} value={group.id}> {/* Use _id instead of id */}
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="New group name..."
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
+                />
                 <button
                   type="button"
-                  onClick={() => onCreateGroup(newGroupName)}
-                  className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50"
+                  onClick={handleAddGroup}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors shadow-sm"
                 >
-                  Create Group
+                  Add Group
                 </button>
-              )}
+              </div>
             </div>
           </div>
         )}

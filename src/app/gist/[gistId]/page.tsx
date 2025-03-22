@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
-import { Gist, GistGroup, NewGist } from "../../types";
-import CreateGistForm from "../../components/CreateGistForm";
+import { Gist, GistGroup, NewGist } from "src/types/types";
+import CreateGistForm from "../components/CreateGistForm";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
   const { data: session, status } = useSession();
@@ -21,7 +21,7 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [newGroupName, setNewGroupName] = useState("");
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
-  const [gists, setGists] = useState<Gist[]>([]); // Added to store all gists for linking
+  const [gists, setGists] = useState<Gist[]>([]); // For linking Gists
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [githubUsername, setGithubUsername] = useState<string>("");
 
@@ -78,7 +78,7 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
 
         // Find the group this gist belongs to (if any)
         const groupWithGist = (groupsData.groups || []).find((group: GistGroup) =>
-          group.gistIds?.some((g) => g.id === gistId)
+          group.gistIds?.some((g) => (typeof g === "string" ? g : g.id) === gistId)
         );
         if (groupWithGist) setSelectedGroupId(groupWithGist.id);
       } catch (error) {
@@ -91,10 +91,9 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
     initialize();
   }, [status, session, params]);
 
-  const handleCreateGroup = async (groupName: string) => {
+  const handleCreateGroup = async (groupName: string): Promise<GistGroup> => {
     if (!groupName.trim()) {
-      alert("Group name cannot be empty");
-      return;
+      throw new Error("Group name cannot be empty");
     }
 
     try {
@@ -111,9 +110,11 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
       setSelectedGroupId(group.id); // Auto-select the new group
       setNewGroupName(""); // Clear input
       await fetchGroupsAndGists(); // Refresh data
+
+      return group; // Return the newly created group
     } catch (error) {
       console.error("Error creating group:", error);
-      alert("Failed to create group. Please try again.");
+      throw new Error("Failed to create group. Please try again.");
     }
   };
 

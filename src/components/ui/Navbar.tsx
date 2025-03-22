@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { FaFolder, FaChevronDown } from "react-icons/fa";
-import { Gist, GistGroup } from "src/app/profile/types";
+import { Gist, GistGroup } from "src/types/types";
 import React from "react";
 import { usePathname } from "next/navigation"; // Add this import
 
