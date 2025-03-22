@@ -32,7 +32,7 @@ export default function PublicGistList({
   const ITEMS_PER_PAGE = 6;
 
   useEffect(() => {
-    let result = [...gists]; // Create a copy to avoid mutating the original array
+    let result = [...gists];
     if (excludeUserGists && githubUsername) {
       result = result.filter((gist) => gist.owner.login.toLowerCase() !== githubUsername.toLowerCase());
     }
@@ -43,7 +43,6 @@ export default function PublicGistList({
           ?.gistIds?.some((g) => g.id === gist.id)
       );
     }
-    // Sort by created_at in descending order (newest first)
     result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setFilteredGists(result);
   }, [gists, selectedGroupId, gistGroups, githubUsername, excludeUserGists]);
@@ -126,15 +125,15 @@ export default function PublicGistList({
   const displayedGists = getPaginatedGists();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-2 sm:p-6 border border-gray-200 max-w-full mx-auto">
-      <h2 className="text-base sm:text-lg font-semibold text-gray-900 mt-1 sm:mt-2 mb-3 sm:mb-4">
+    <div className="bg-white rounded-lg shadow-sm p-1 sm:p-2 border border-gray-200 max-w-full mx-auto pt-10 sm:pt-12">
+      <h2 className="text-sm sm:text-base font-semibold text-gray-900 mt-0 sm:mt-1 mb-1 sm:mb-2">
         {excludeUserGists ? "Other Public Gists" : "Public Gists"}{" "}
         {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name}` : ""}
       </h2>
       {filteredGists.length === 0 ? (
-        <p className="text-sm text-gray-600">No gists available yet.</p>
+        <p className="text-xs sm:text-sm text-gray-600">No gists available yet.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-4">
           {displayedGists.map((gist) => {
             const isExpanded = expandedGistId === gist.id;
             const isStarred = starredGists.has(gist.id);
@@ -144,7 +143,7 @@ export default function PublicGistList({
             return (
               <div
                 key={gist.id}
-                className={`border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-300 ${
+                className={`border border-gray-200 rounded-lg p-2 sm:p-3 transition-all duration-300 ${
                   isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
                 }`}
               >
@@ -190,20 +189,20 @@ export default function PublicGistList({
         </div>
       )}
       {filteredGists.length > ITEMS_PER_PAGE && totalPages > 1 && (
-        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+        <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
           >
             Previous
           </button>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1 sm:gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
+                className={`px-1 sm:px-2 py-1 rounded text-xs sm:text-sm ${
                   currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
@@ -214,7 +213,7 @@ export default function PublicGistList({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
           >
             Next
           </button>

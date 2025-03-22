@@ -116,8 +116,8 @@ export default function Home() {
         setSelectedGroupId={setSelectedGroupId}
         isGistList={true}
       />
-      <div className="pt-[90px] relative z-0">
-        <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="pt-[20px] relative z-0">
+        <main className="flex-1 py-3 px-2 sm:px-2 lg:px-4">
           <div className="max-w-5xl mx-auto">
             <header className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Public Gists</h1>

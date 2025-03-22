@@ -38,10 +38,11 @@ export default function GistCard({
   return (
     <div
       className={`relative border border-gray-200 rounded-lg p-4 sm:p-6 transition-all duration-300 ${
-        isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
+        isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md h-60 sm:h-64"
       }`}
     >
-      <div className={`${isExpanded ? "border-b pb-3 sm:pb-4 mb-3 sm:mb-4" : ""}`}>
+      <div className={`${isExpanded ? "border-b pb-3 sm:pb-4 mb-3 sm:mb-4" : "h-full flex flex-col"}`}>
+        {/* Header Section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
           <div className="flex items-center gap-2">
             <img
@@ -56,15 +57,28 @@ export default function GistCard({
             </div>
           </div>
         </div>
-        <p className="text-sm sm:text-md font-medium text-gray-900 mb-2">{gist.description || "Untitled Gist"}</p>
+
+        {/* Description Section - Strictly Two Lines */}
+        <p
+          className="text-sm sm:text-md font-medium text-gray-900 mb-2 line-clamp-2 overflow-hidden text-ellipsis"
+          title={gist.description || "Untitled Gist"}
+        >
+          {gist.description || "Untitled Gist"}
+        </p>
+
+        {/* Code Preview Section - Constrained Height */}
         {!isExpanded && (
-          <div className="text-xs sm:text-sm text-gray-600 mb-2 bg-gray-50 p-2 rounded border border-gray-200 font-mono">
+          <div className="text-xs sm:text-sm text-gray-600 mb-2 bg-gray-50 p-2 rounded border border-gray-200 font-mono h-20 sm:h-24 overflow-hidden">
             <p className="text-gray-500">#!/usr/bin/env {firstFile.language?.toLowerCase() ?? "text"}</p>
-            <p className="mt-1 sm:mt-2 italic">** {gist.description || "No description"} **</p>
+            <p className="mt-1 sm:mt-2 italic line-clamp-2 overflow-hidden text-ellipsis">
+              ** {gist.description || "No description"} **
+            </p>
           </div>
         )}
+
+        {/* Related Gist Link - Constrained */}
         {linkedGist === gist.id && !isExpanded && relatedGistUrl && (
-          <div className="text-xs sm:text-sm text-blue-600 mb-2">
+          <div className="text-xs sm:text-sm text-blue-600 mb-2 line-clamp-1 overflow-hidden text-ellipsis">
             <p>
               Related Gist:{" "}
               <a href={relatedGistUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
@@ -73,7 +87,9 @@ export default function GistCard({
             </p>
           </div>
         )}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+
+        {/* Action Buttons - Fixed at Bottom */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-auto">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -99,6 +115,8 @@ export default function GistCard({
             <FaCode className="w-3 h-3 sm:w-4 sm:h-4" /> {isExpanded ? "Minimize" : "View Full Gist"}
           </button>
         </div>
+
+        {/* Edit/Delete Buttons */}
         {isOwner && !isExpanded && (
           <div className="absolute top-3 sm:top-4 right-4 sm:right-6 flex gap-2 px-2 bg-white">
             <button

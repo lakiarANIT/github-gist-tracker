@@ -37,6 +37,7 @@ export default function EditProfilePage() {
     password: false,
   });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // Added for Navbar
 
   const {
     register,
@@ -112,20 +113,21 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar /> {/* No props needed, gist features won't show */}
-      <div className="pt-[90px] py-6 px-4 sm:px-6 lg:px-8">
+
+
+      <div className="pt-12 sm:pt-14 px-2 sm:px-4 py-4">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-sm">
-          <div className="p-6">
-            <h1 className="text-2xl font-semibold text-gray-900 mb-6">Edit Profile</h1>
+          <div className="p-4 sm:p-6">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Edit Profile</h1>
 
             {error && (
-              <div className="mb-6 p-3 bg-red-50 text-red-700 rounded text-sm border border-red-200">
+              <div className="mb-4 sm:mb-6 p-2 sm:p-3 bg-red-50 text-red-700 rounded text-sm border border-red-200">
                 {error}
               </div>
             )}
 
             {/* Avatar Section */}
-            <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+            <div className="mb-4 sm:mb-6 p-2 sm:p-4 border border-gray-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div className="relative">
@@ -158,8 +160,8 @@ export default function EditProfilePage() {
 
               {/* Avatar Picker */}
               {showAvatarPicker && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex justify-between items-center mb-4">
+                <div className="mt-2 sm:mt-4 p-2 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex justify-between items-center mb-2 sm:mb-4">
                     <h3 className="text-md font-medium text-gray-800">Choose Avatar</h3>
                     <button
                       onClick={() => setShowAvatarPicker(false)}
@@ -181,7 +183,7 @@ export default function EditProfilePage() {
                       />
                     ))}
                   </div>
-                  <label className="block mt-4 text-center text-sm text-blue-600 cursor-pointer hover:underline">
+                  <label className="block mt-2 sm:mt-4 text-center text-sm text-blue-600 cursor-pointer hover:underline">
                     Upload Custom Avatar
                     <input
                       id="avatar"
@@ -197,10 +199,10 @@ export default function EditProfilePage() {
             </div>
 
             {/* Form Fields */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Name Section */}
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+              <div className="p-2 sm:p-4 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Name</label>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <input
                     {...register("name")}
@@ -221,8 +223,8 @@ export default function EditProfilePage() {
               </div>
 
               {/* Email Section */}
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <div className="p-2 sm:p-4 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Email</label>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <input
                     {...register("email")}
@@ -244,8 +246,8 @@ export default function EditProfilePage() {
               </div>
 
               {/* Bio Section */}
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+              <div className="p-2 sm:p-4 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Bio</label>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-2">
                   <div className="flex-1">
                     <textarea
@@ -273,10 +275,10 @@ export default function EditProfilePage() {
               </div>
 
               {/* Password Section */}
-              <div className="p-4 border border-gray-200 rounded-lg">
-                <form onSubmit={handleSubmit(onSubmitPassword)} className="space-y-4">
+              <div className="p-2 sm:p-4 border border-gray-200 rounded-lg">
+                <form onSubmit={handleSubmit(onSubmitPassword)} className="space-y-2 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       New Password
                     </label>
                     <input
@@ -290,7 +292,7 @@ export default function EditProfilePage() {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                       Confirm Password
                     </label>
                     <input
@@ -315,7 +317,7 @@ export default function EditProfilePage() {
             </div>
 
             {/* Back to Profile */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-4 sm:mt-6 flex justify-end">
               <button
                 onClick={() => router.push("/profile")}
                 className="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-gray-800"

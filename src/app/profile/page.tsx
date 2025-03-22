@@ -379,15 +379,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="fixed top-0 left-0 w-full z-20">
-        <Navbar
-          gistGroups={gistGroups}
-          gists={gists}
-          selectedGroupId={selectedGroupId}
-          setSelectedGroupId={setSelectedGroupId}
-          isGistList={false}
-        />
-      </div>
+     
       <div className="pt-[4rem] max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6">
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
           <ProfileView
