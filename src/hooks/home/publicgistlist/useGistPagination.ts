@@ -1,7 +1,12 @@
+// src/hooks/useGistPagination.ts
 import { useState } from "react";
 import { Gist } from "src/types/types";
 
-export function useGistPagination(filteredGists: Gist[], itemsPerPage: number = 6) {
+export function useGistPagination(
+  filteredGists: Gist[] = [], // Default to empty array to prevent undefined
+  itemsPerPage: number = 6,
+  onResetSearch?: () => void // Optional callback for reset functionality
+) {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedGistId, setExpandedGistId] = useState<string | null>(null);
 
@@ -34,6 +39,14 @@ export function useGistPagination(filteredGists: Gist[], itemsPerPage: number = 
     setExpandedGistId(null);
   };
 
+  const handleResetSearch = () => {
+    if (onResetSearch) {
+      onResetSearch(); // Call the parent’s reset function
+      setCurrentPage(1); // Reset to first page
+      setExpandedGistId(null); // Clear expanded gist
+    }
+  };
+
   return {
     currentPage,
     totalPages,
@@ -43,5 +56,6 @@ export function useGistPagination(filteredGists: Gist[], itemsPerPage: number = 
     handleNextGist,
     handlePreviousGist,
     handlePageChange,
+    handleResetSearch, // Include this in the return object
   };
 }
