@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
 import { Gist, GistGroup, NewGist } from "src/types/types";
 import CreateGistForm from "../components/CreateGistForm";
-import Navbar from "@components/ui/Navbar";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
   const { data: session, status } = useSession();
@@ -22,7 +21,7 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [newGroupName, setNewGroupName] = useState("");
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
-  const [gists, setGists] = useState<Gist[]>([]); // For linking Gists
+  const [gists, setGists] = useState<Gist[]>([]);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [githubUsername, setGithubUsername] = useState<string>("");
 
@@ -75,9 +74,8 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
         if (!groupsResponse.ok) throw new Error("Failed to fetch Gist groups");
         const groupsData = await groupsResponse.json();
         setGistGroups(groupsData.groups || []);
-        setGists(groupsData.gists || []); // Fetch all gists for linking
+        setGists(groupsData.gists || []);
 
-        // Find the group this gist belongs to (if any)
         const groupWithGist = (groupsData.groups || []).find((group: GistGroup) =>
           group.gistIds?.some((g) => (typeof g === "string" ? g : g.id) === gistId)
         );
@@ -108,11 +106,11 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
       const { group } = await response.json();
 
       setGistGroups((prev) => [...prev, group]);
-      setSelectedGroupId(group.id); // Auto-select the new group
-      setNewGroupName(""); // Clear input
-      await fetchGroupsAndGists(); // Refresh data
+      setSelectedGroupId(group.id);
+      setNewGroupName("");
+      await fetchGroupsAndGists();
 
-      return group; // Return the newly created group
+      return group;
     } catch (error) {
       console.error("Error creating group:", error);
       throw new Error("Failed to create group. Please try again.");
@@ -137,26 +135,24 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
 
   if (status === "loading" || !gist || !githubUsername) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-8 h-8 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="w-8 h-8 border-4 border-t-blue-500 dark:border-t-blue-400 border-gray-200 dark:border-gray-700 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (status === "unauthenticated" || githubUsername !== gist.owner?.login) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-lg text-gray-700">You are not authorized to edit this gist.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-lg text-gray-700 dark:text-gray-300">You are not authorized to edit this gist.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 px-4 sm:px-6 lg:px-8">
-
-
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Gist</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">Edit Gist</h1>
         <CreateGistForm
           newGist={newGist}
           setNewGist={setNewGist}

@@ -1,3 +1,4 @@
+// PublicSearchGists.tsx
 import { useState, useEffect } from "react";
 import { Octokit } from "@octokit/core";
 import { useSession } from "next-auth/react";
@@ -6,11 +7,11 @@ import GistDetailsExpanded from "@app/gist/components/GistDetailsExpanded";
 import { Gist } from "src/types/types";
 
 interface PublicSearchGistsProps {
-  gists: Gist[]; // All gists for reference
-  filteredGists: Gist[]; // Filtered search results
-  selectedGistId?: string | null; // Selected gist from dropdown
+  gists: Gist[];
+  filteredGists: Gist[];
+  selectedGistId?: string | null;
   octokit?: Octokit | null;
-  onResetSearch?: () => void; // Callback to reset search state
+  onResetSearch?: () => void;
 }
 
 export default function PublicSearchGists({
@@ -28,7 +29,7 @@ export default function PublicSearchGists({
   const ITEMS_PER_PAGE = 6;
 
   useEffect(() => {
-    setExpandedGistId(selectedGistId || null); // Update expanded gist when selectedGistId changes
+    setExpandedGistId(selectedGistId || null);
   }, [selectedGistId]);
 
   useEffect(() => {
@@ -106,32 +107,31 @@ export default function PublicSearchGists({
     setExpandedGistId(null);
   };
 
-  // Reset search and go back to page 1
   const handleResetSearch = () => {
     if (onResetSearch) {
       onResetSearch();
-      setCurrentPage(1); // Reset to first page
-      setExpandedGistId(null); // Close any expanded gist
+      setCurrentPage(1);
+      setExpandedGistId(null);
     }
   };
 
   const displayedGists = getPaginatedGists();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-1 sm:p-2 border border-gray-200 max-w-full mx-auto pt-10 sm:pt-12">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-1 sm:p-2 border border-gray-200 dark:border-gray-700 max-w-full mx-auto pt-10 sm:pt-12">
       <div className="flex justify-between items-center mb-2 sm:mb-4">
-        <h2 className="text-sm sm:text-base font-semibold text-gray-900 mt-0 sm:mt-1">
+        <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mt-0 sm:mt-1">
           Search Results ({filteredGists.length} found)
         </h2>
         <button
           onClick={handleResetSearch}
-          className="px-3 sm:px-4 py-1 sm:py-2 bg-blue-600 text-white rounded text-xs sm:text-sm hover:bg-blue-700 transition-colors"
+          className="px-3 sm:px-4 py-1 sm:py-2 bg-blue-600 text-white rounded text-xs sm:text-sm hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors"
         >
           Back to Public Gists
         </button>
       </div>
       {filteredGists.length === 0 ? (
-        <p className="text-xs sm:text-sm text-gray-600">No gists match your search.</p>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">No gists match your search.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-4">
           {displayedGists.map((gist) => {
@@ -143,8 +143,8 @@ export default function PublicSearchGists({
             return (
               <div
                 key={gist.id}
-                className={`border border-gray-200 rounded-lg p-2 sm:p-3 transition-all duration-300 ${
-                  isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
+                className={`border border-gray-200 dark:border-gray-700 rounded-lg p-2 sm:p-3 transition-all duration-300 ${
+                  isExpanded ? "col-span-full shadow-lg bg-gray-50 dark:bg-gray-700" : "hover:shadow-md"
                 }`}
               >
                 {!isExpanded && (
@@ -193,7 +193,7 @@ export default function PublicSearchGists({
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs sm:text-sm hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Previous
           </button>
@@ -203,7 +203,9 @@ export default function PublicSearchGists({
                 key={page}
                 onClick={() => handlePageChange(page)}
                 className={`px-1 sm:px-2 py-1 rounded text-xs sm:text-sm ${
-                  currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  currentPage === page
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
                 }`}
               >
                 {page}
@@ -213,7 +215,7 @@ export default function PublicSearchGists({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs sm:text-sm hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Next
           </button>

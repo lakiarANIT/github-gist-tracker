@@ -125,13 +125,13 @@ export default function PublicGistList({
   const displayedGists = getPaginatedGists();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-1 sm:p-2 border border-gray-200 max-w-full mx-auto pt-10 sm:pt-12">
-      <h2 className="text-sm sm:text-base font-semibold text-gray-900 mt-0 sm:mt-1 mb-1 sm:mb-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-1 sm:p-2 border border-gray-200 dark:border-gray-600 max-w-full mx-auto pt-10 sm:pt-12">
+      <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mt-0 sm:mt-1 mb-1 sm:mb-2">
         {excludeUserGists ? "Other Public Gists" : "Public Gists"}{" "}
         {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name}` : ""}
       </h2>
       {filteredGists.length === 0 ? (
-        <p className="text-xs sm:text-sm text-gray-600">No gists available yet.</p>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">No gists available yet.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2 sm:gap-4">
           {displayedGists.map((gist) => {
@@ -143,8 +143,8 @@ export default function PublicGistList({
             return (
               <div
                 key={gist.id}
-                className={`border border-gray-200 rounded-lg p-2 sm:p-3 transition-all duration-300 ${
-                  isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
+                className={`border border-gray-200 dark:border-gray-600 rounded-lg p-2 sm:p-3 transition-all duration-300 ${
+                  isExpanded ? "col-span-full shadow-lg bg-gray-50 dark:bg-gray-700" : "hover:shadow-md"
                 }`}
               >
                 {!isExpanded && (
@@ -193,7 +193,7 @@ export default function PublicGistList({
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-xs sm:text-sm hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Previous
           </button>
@@ -203,7 +203,9 @@ export default function PublicGistList({
                 key={page}
                 onClick={() => handlePageChange(page)}
                 className={`px-1 sm:px-2 py-1 rounded text-xs sm:text-sm ${
-                  currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  currentPage === page
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
                 }`}
               >
                 {page}
@@ -213,7 +215,7 @@ export default function PublicGistList({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-3 sm:px-4 py-1 sm:py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-xs sm:text-sm hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Next
           </button>

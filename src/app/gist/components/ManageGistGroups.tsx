@@ -129,23 +129,27 @@ export default function ManageGistGroups({ gistGroups, setGistGroups }: ManageGi
   });
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Manage Gist Groups</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">
+        Manage Gist Groups
+      </h2>
 
       {/* Add New Group */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-2 text-gray-700">Add New Group</h3>
+        <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+          Add New Group
+        </h3>
         <div className="flex gap-2">
           <input
             type="text"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             placeholder="Enter new group name"
-            className="flex-1 p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            className="flex-1 p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           />
           <button
             onClick={handleAddGroup}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors"
           >
             Add Group
           </button>
@@ -154,12 +158,14 @@ export default function ManageGistGroups({ gistGroups, setGistGroups }: ManageGi
 
       {/* Edit/Delete Existing Group */}
       <div>
-        <h3 className="text-lg font-semibold mb-2 text-gray-700">Edit or Delete Group</h3>
+        <h3 className="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+          Edit or Delete Group
+        </h3>
         <div className="space-y-4">
           <select
             value={selectedGroupId}
             onChange={(e) => setSelectedGroupId(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="">Select a group</option>
             {validGistGroups.map((group) => (
@@ -176,18 +182,18 @@ export default function ManageGistGroups({ gistGroups, setGistGroups }: ManageGi
                 value={editGroupName}
                 onChange={(e) => setEditGroupName(e.target.value)}
                 placeholder="Edit group name"
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleEditGroup}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 dark:hover:bg-green-500 transition-colors"
                 >
                   Update Group
                 </button>
                 <button
                   onClick={handleDeleteGroup}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 dark:hover:bg-red-500 transition-colors"
                 >
                   Delete Group
                 </button>

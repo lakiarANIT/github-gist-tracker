@@ -200,18 +200,19 @@ export default function GistList({
     setLoading(true);
   };
 
-  if (loading) return <div className="text-gray-600 text-sm sm:text-base">Loading gists...</div>;
-  if (error) return <div className="text-red-500 text-sm sm:text-base">Error: {error}</div>;
+  
+  if (loading) return <div className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading gists...</div>;
+  if (error) return <div className="text-red-500 dark:text-red-400 text-sm sm:text-base">Error: {error}</div>;
 
   const displayedGists = getPaginatedGists();
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 max-w-full mx-auto">
-      <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700 max-w-full mx-auto">
+      <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
         Gists {selectedGroupId ? `in ${gistGroups.find((g) => g.id === selectedGroupId)?.name || "Unknown"}` : "from All Groups"}
       </h2>
       {displayedGists.length === 0 ? (
-        <p className="text-xs sm:text-sm text-gray-600">No gists available yet. Share one!</p>
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">No gists available yet. Share one!</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6">
           {displayedGists.map((gist, index) => {
@@ -225,8 +226,8 @@ export default function GistList({
             return (
               <div
                 key={gist.id ? `${gist.id}-${index}` : `gist-${index}`}
-                className={`border border-gray-200 rounded-lg p-3 sm:p-4 transition-all duration-300 ${
-                  isExpanded ? "col-span-full shadow-lg bg-gray-50" : "hover:shadow-md"
+                className={`border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 transition-all duration-300 ${
+                  isExpanded ? "col-span-full shadow-lg bg-gray-50 dark:bg-gray-800" : "hover:shadow-md dark:hover:shadow-gray-700"
                 }`}
               >
                 {!isExpanded && (
@@ -267,7 +268,7 @@ export default function GistList({
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-sm sm:text-base hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Previous
           </button>
@@ -277,7 +278,9 @@ export default function GistList({
                 key={page}
                 onClick={() => handlePageChange(page)}
                 className={`px-2 sm:px-3 py-1 rounded text-sm sm:text-base ${
-                  currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  currentPage === page 
+                    ? "bg-blue-600 text-white dark:bg-blue-500" 
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
                 }`}
               >
                 {page}
@@ -287,7 +290,7 @@ export default function GistList({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded text-sm sm:text-base hover:bg-gray-300 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded text-sm sm:text-base hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
           >
             Next
           </button>

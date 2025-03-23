@@ -261,36 +261,38 @@ export default function CreateGistForm({
 
   return (
     <>
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">{isEditing ? "Edit Gist" : "Create Gists"}</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        {isEditing ? "Edit Gist" : "Create Gists"}
+      </h2>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Shared description for all Gists..."
           value={newGist.description}
           onChange={(e) => setNewGist({ ...newGist, description: e.target.value })}
-          className="w-full p-2 mb-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+          className="w-full p-2 mb-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         />
         {newGist.files.map((file, index) => (
-          <div key={index} className="mb-4 border-b pb-4 relative">
+          <div key={index} className="mb-4 border-b pb-4 border-gray-200 dark:border-gray-700 relative">
             <input
               type="text"
               placeholder={`Gist ${index + 1} filename (e.g., file${index + 1}.txt)`}
               value={file.filename}
               onChange={(e) => handleFileChange(index, "filename", e.target.value)}
-              className="w-full p-2 mb-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              className="w-full p-2 mb-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             />
             <textarea
               placeholder={`Content for Gist ${index + 1}...`}
               value={file.content}
               onChange={(e) => handleFileChange(index, "content", e.target.value)}
-              className="w-full p-2 mb-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 font-mono text-sm"
+              className="w-full p-2 mb-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 font-mono text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               rows={4}
             />
             <div className="flex items-center gap-2 mb-2">
               <select
                 value={file.language}
                 onChange={(e) => handleFileChange(index, "language", e.target.value)}
-                className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                className="p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 {["Text", "Ruby", "Python", "JavaScript", "TypeScript"].map((lang) => (
                   <option key={lang} value={lang}>
@@ -302,7 +304,7 @@ export default function CreateGistForm({
                 <select
                   value={linkedGist || ""}
                   onChange={(e) => setLinkedGist(e.target.value || null)}
-                  className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                  className="p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Link to another Gist (optional)</option>
                   {gists.map((gist) => (
@@ -316,7 +318,7 @@ export default function CreateGistForm({
             <button
               type="button"
               onClick={() => handleDeleteFile(index)}
-              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+              className="absolute top-2 right-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
               title="Delete this Gist"
               disabled={newGist.files.length <= 1}
             >
@@ -328,26 +330,28 @@ export default function CreateGistForm({
           <button
             type="button"
             onClick={handleAddFile}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             Add another Gist
           </button>
           <select
             value={newGist.isPublic ? "public" : "secret"}
             onChange={(e) => setNewGist({ ...newGist, isPublic: e.target.value === "public" })}
-            className="p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+            className="p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             <option value="secret">Create secret gists</option>
             <option value="public">Create public gists</option>
           </select>
         </div>
         {!isEditing && (
-          <div className="mb-4 bg-white shadow-sm border border-gray-200 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Add to Gist Group</label>
+          <div className="mb-4 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Add to Gist Group
+            </label>
             <select
               value={selectedGroupId}
               onChange={(e) => setSelectedGroupId(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 bg-gray-50"
+              className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Select a group (optional)</option>
               {gistGroups.map((group) => (
@@ -360,7 +364,7 @@ export default function CreateGistForm({
         )}
         <button
           type="submit"
-          className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+          className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 dark:hover:bg-green-500 transition-colors"
         >
           {isEditing ? "Update Gist" : newGist.isPublic ? "Create public gists" : "Create secret gists"}
         </button>

@@ -35,23 +35,97 @@ body {
   @apply opacity-100;
 }
 
+/* Style for input and textarea elements */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea {
+  @apply bg-white text-gray-900 border border-gray-300 rounded;
+  @apply dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600;
+  @apply px-2 py-1;
+  @apply focus:outline-none focus:ring-0;
+  @apply hover:border-gray-400 dark:hover:border-gray-500 focus:border-gray-400 dark:focus:border-gray-500;
+  @apply shadow-sm;
+}
+
+textarea {
+  @apply resize-y min-h-[100px] whitespace-pre-wrap;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="search"]::placeholder,
+textarea::placeholder {
+  @apply text-gray-500 dark:text-gray-400;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+textarea:focus {
+  @apply ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400;
+}
+
+/* Ensure pre blocks have visible text */
+pre {
+  -webkit-user-select: text;
+  user-select: text;
+  white-space: pre-wrap;
+}
+
+/* Force text and background colors for pre blocks */
+pre.bg-gray-100 {
+  background-color: #f3f4f6 !important; /* Tailwind's bg-gray-100 */
+}
+
+pre.dark\:bg-gray-900 {
+  background-color: #111827 !important; /* Tailwind's bg-gray-900 */
+}
+
+pre.text-gray-900 {
+  color: #1f2937 !important; /* Tailwind's text-gray-900 */
+}
+
+pre.dark\:text-gray-100 {
+  color: #f3f4f6 !important; /* Tailwind's text-gray-100 */
+}
+
+@media (forced-colors: active) {
+  pre {
+    color: CanvasText !important;
+    background: Canvas !important;
+  }
+}
+
+pre::selection {
+  background: #bfdbfe;
+  color: #000;
+}
+
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  z-index: 10;
+}
+
 @keyframes blink {
   0% { opacity: 1; }
   50% { opacity: 0; }
   100% { opacity: 1; }
 }
 
-
-
 .animate-blink {
   animation: blink 1s infinite;
 }
 
-
 .typewriter {
-  overflow: hidden; 
-  border-right: 0.15em solid #4b5563; 
-  white-space: nowrap; 
+  overflow: hidden;
+  border-right: 0.15em solid #4b5563;
+  white-space: nowrap;
   animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
 }
 
@@ -70,6 +144,6 @@ body {
     border-color: transparent;
   }
   50% {
-    border-color: #4b5563; /* Matches text-gray-700 */
+    border-color: #4b5563;
   }
 }

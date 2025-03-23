@@ -9,9 +9,8 @@ import ProfileView from "./components/ProfileView";
 import CreateGistForm from "@app/gist/components/CreateGistForm";
 import GistList from "@app/gist/components/GistList";
 import PublicGistList from "src/components/home/PublicGistList";
-import Navbar from "@components/ui/Navbar";
 import { FaFolder } from "react-icons/fa";
-import ManageGistGroups from "@app/gist/components/ManageGistGroups"; // Import the corrected component
+import ManageGistGroups from "@app/gist/components/ManageGistGroups";
 
 const ManageGistGroupsContainer = ({
   gistGroups,
@@ -23,10 +22,10 @@ const ManageGistGroupsContainer = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+    <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition-colors"
+        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-colors"
       >
         {isExpanded ? "Hide Manage Groups" : "Manage Groups"}
       </button>
@@ -45,7 +44,7 @@ export default function ProfilePage() {
   const [gists, setGists] = useState<Gist[]>([]);
   const [publicGists, setPublicGists] = useState<Gist[]>([]);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>(""); // "" means "All Gists"
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [showCreateGist, setShowCreateGist] = useState(false);
   const [newGist, setNewGist] = useState<NewGist>({
     description: "",
@@ -140,7 +139,7 @@ export default function ProfilePage() {
             }
 
             setShowLocationPrompt(false);
-            window.location.reload(); // Refresh to update session data
+            window.location.reload();
           } catch (error) {
             console.error("Error updating location:", error);
             alert("Failed to update location. Please try again.");
@@ -155,7 +154,6 @@ export default function ProfilePage() {
       alert("Geolocation is not supported by your browser.");
     }
   };
-
 
   const GroupList = ({
     gistGroups,
@@ -178,32 +176,30 @@ export default function ProfilePage() {
     const letters = Object.keys(groupedGroups).sort();
 
     return (
-      <div className="w-full max-h-[50vh] overflow-y-auto bg-white rounded-md shadow-sm border border-gray-200">
+      <div className="w-full max-h-[50vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setSelectedGroupId("")}
-          className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${selectedGroupId === "" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
-            }`}
+          className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${selectedGroupId === "" ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
         >
           <FaFolder className="w-4 h-4 mr-2" />
           <span>All Gists</span>
         </button>
         {letters.map((letter) => (
           <div key={letter}>
-            <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 bg-gray-50 border-t border-gray-200">
+            <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
               {letter}
             </h3>
             {groupedGroups[letter].map((group) => (
               <button
                 key={group.id}
                 onClick={() => setSelectedGroupId(group.id)}
-                className={`w-full px-4 py-2 text-left text-sm flex items-center ${selectedGroupId === group.id ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
-                  }`}
+                className={`w-full px-4 py-2 text-left text-sm flex items-center ${selectedGroupId === group.id ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
               >
                 <FaFolder className="w-4 h-4 mr-2" />
                 <div className="truncate flex-1">
                   <span className="font-medium">{group.name}</span>
-                  <span className="ml-2 text-xs text-gray-500">({group.gistIds?.length ?? 0})</span>
-                  <span className="block text-xs text-gray-600 truncate">@{group.owner?.login || "unknown"}</span>
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({group.gistIds?.length ?? 0})</span>
+                  <span className="block text-xs text-gray-600 dark:text-gray-400 truncate">@{group.owner?.login || "unknown"}</span>
                 </div>
               </button>
             ))}
@@ -338,10 +334,10 @@ export default function ProfilePage() {
 
         if (gistIds.length === 0) {
           if (isMounted.current) {
-            setGists([]); // Explicitly set to empty array
+            setGists([]);
             console.log("No gists found for this selection.");
           }
-          return; // Exit early if no gists to fetch
+          return;
         }
 
         const gistPromises = gistIds.map((gistId) =>
@@ -376,24 +372,24 @@ export default function ProfilePage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-t-blue-500 border-gray-200 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 border-4 border-t-blue-500 dark:border-t-blue-400 border-gray-200 dark:border-gray-700 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-base sm:text-lg text-gray-700 mb-4">
+          <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 mb-4">
             <span className="typewriter inline-block">
               Please sign in to view your profile.
             </span>
           </p>
           <a
             href="/auth/login"
-            className="inline-block px-6 py-2 text-sm sm:text-base text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="inline-block px-6 py-2 text-sm sm:text-base text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors font-medium"
           >
             Sign In
           </a>
@@ -403,10 +399,9 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="pt-[4rem] max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6">
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
           <ProfileView
             showLocationPrompt={showLocationPrompt}
             setShowLocationPrompt={setShowLocationPrompt}
@@ -414,16 +409,16 @@ export default function ProfilePage() {
           />
         </div>
         <ManageGistGroupsContainer gistGroups={gistGroups} setGistGroups={setGistGroups} />
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
           <button
             onClick={() => setShowCreateGist(!showCreateGist)}
-            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors"
           >
             {showCreateGist ? "Hide Create Gist" : "Create Gist"}
           </button>
           {showCreateGist && (
             <div className="mt-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Create a New Gist</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Create a New Gist</h2>
               <CreateGistForm
                 newGist={newGist}
                 setNewGist={setNewGist}
@@ -438,18 +433,18 @@ export default function ProfilePage() {
                 octokit={octokit}
                 setGists={setGists}
                 setGistGroups={setGistGroups}
-                setActiveTab={() => { }} // No-op
+                setActiveTab={() => { }}
                 githubUsername={githubUsername}
                 onCreateGroup={handleCreateGroup}
               />
             </div>
           )}
         </div>
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Groups</h2>
-          <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Groups</h2>
+          <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
             {gists.length === 0 ? (
-              <p className="p-4 text-gray-600 text-center">No gists found for this selection. Create one above!</p>
+              <p className="p-4 text-gray-600 dark:text-gray-400 text-center">No gists found for this selection. Create one above!</p>
             ) : (
               <GistList
                 gists={gists}
@@ -461,7 +456,7 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
           <GistList
             gists={gists}
             selectedGroupId={selectedGroupId}
@@ -470,7 +465,7 @@ export default function ProfilePage() {
             onDeleteGist={handleDeleteGist}
           />
         </div>
-        <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto mb-4 sm:mb-6">
           <PublicGistList
             gists={publicGists}
             selectedGroupId={selectedGroupId}

@@ -1,10 +1,11 @@
+// Home.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Octokit } from "@octokit/core";
 import PublicGistList from "src/components/home/PublicGistList";
-import PublicSearchGists from "src/components/home/PublicSearchGist"; // Fixed typo
+import PublicSearchGists from "src/components/home/PublicSearchGist";
 import Navbar from "src/components/ui/Navbar";
 import { Gist, GistGroup } from "src/types/types";
 import Link from "next/link";
@@ -101,10 +102,10 @@ export default function Home() {
 
   if (loading || isRateLimited) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-t-blue-600 border-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-lg font-mono text-gray-700">
+          <div className="w-10 h-10 border-4 border-t-blue-600 dark:border-t-blue-400 border-gray-200 dark:border-gray-700 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-lg font-mono text-gray-700 dark:text-gray-300">
             {isRateLimited ? "Rate limit reached, please wait..." : "Loading gists, please wait..."}
           </div>
         </div>
@@ -113,7 +114,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar
         gistGroups={gistGroups}
         gists={memoizedGists}
@@ -126,12 +127,12 @@ export default function Home() {
       />
 
       {/* Introductory Content Section */}
-      <div className="bg-gradient-to-b from-blue-50 to-gray-50 pt-20 pb-12">
+      <div className="bg-gradient-to-b from-blue-50 to-gray-50 dark:from-blue-900/20 dark:to-gray-900 pt-20 pb-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-gray-100 mb-4">
             Discover GitHub Gist Tracker (GGT)
           </h1>
-          <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
             Elevate your coding workflow with a powerful tool to create, manage, and explore
             GitHub Gists—all in one place.
           </p>
@@ -139,21 +140,21 @@ export default function Home() {
             {status === "authenticated" ? (
               <Link
                 href="/profile"
-                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors"
               >
                 Go to Profile
               </Link>
             ) : (
               <Link
                 href="/auth/login"
-                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors"
               >
                 Sign In with GitHub
               </Link>
             )}
             <Link
               href="/learnmore"
-              className="inline-block px-8 py-3 bg-transparent text-blue-600 text-lg font-semibold border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+              className="inline-block px-8 py-3 bg-transparent text-blue-600 dark:text-blue-400 text-lg font-semibold border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               Learn More
             </Link>
@@ -168,8 +169,8 @@ export default function Home() {
             {(selectedGistId || filteredSearchGists.length > 0) ? (
               <>
                 <header className="mb-6">
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Search Results</h1>
-                  <p className="text-sm text-gray-500">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Search Results</h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Showing {selectedGistId ? "1 selected gist" : `${filteredSearchGists.length} matching gists`}
                   </p>
                 </header>
@@ -188,8 +189,8 @@ export default function Home() {
             ) : (
               <>
                 <header className="mb-6">
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Public Gists</h1>
-                  <p className="text-sm text-gray-500">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Public Gists</h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Explore {memoizedGists.length} gists from {gistGroups.length} groups
                   </p>
                 </header>
