@@ -17,6 +17,7 @@ interface NavbarProps {
   isGistList?: boolean;
   onGistSelect?: (gistId: string) => void;
   onSearchSubmit?: (query: string) => void;
+  isSearchVisible?: boolean; // New prop to control search visibility
 }
 
 export default function Navbar({
@@ -28,6 +29,7 @@ export default function Navbar({
   isGistList = false,
   onGistSelect = () => {},
   onSearchSubmit = () => {},
+  isSearchVisible = false, // Default to false (hidden)
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -53,7 +55,7 @@ export default function Navbar({
 
   useEffect(() => {
     if (!isSearchOpen || searchQuery.length < 2) {
-      if (searchResults.length > 0) setSearchResults([]); // Only reset if not already empty
+      if (searchResults.length > 0) setSearchResults([]);
       return;
     }
 
@@ -64,8 +66,8 @@ export default function Navbar({
       .slice(0, 6);
 
     setSearchResults((prev) => {
-      const prevIds = prev.map(g => g.id).join(",");
-      const newIds = filtered.map(g => g.id).join(",");
+      const prevIds = prev.map((g) => g.id).join(",");
+      const newIds = filtered.map((g) => g.id).join(",");
       return prevIds === newIds ? prev : filtered;
     });
   }, [searchQuery, gists, isSearchOpen]);
@@ -154,39 +156,41 @@ export default function Navbar({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 md:gap-6 shrink-0 relative">
-          {isSearchOpen ? (
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search gists..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="w-40 xs:w-48 sm:w-64 md:w-80 bg-purple-800 text-white placeholder-purple-400 border border-purple-700 rounded-md py-1 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
-                onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
-                autoFocus
-              />
-              {searchResults.length > 0 && (
-                <div className="absolute top-full left-0 mt-2 w-full bg-white text-gray-900 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-                  {searchResults.map((gist) => (
-                    <button
-                      key={gist.id}
-                      onClick={() => handleSearchSelect(gist.id)}
-                      className="w-full px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm hover:bg-gray-100 flex flex-col"
-                    >
-                      <span className="font-medium truncate">{gist.description || "No description"}</span>
-                      <span className="text-[10px] text-gray-600 truncate">@{gist.owner.login}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <button onClick={() => setIsSearchOpen(true)} className="text-white hover:text-purple-300 focus:outline-none">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
+          {isSearchVisible && ( // Only render search if isSearchVisible is true
+            isSearchOpen ? (
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search gists..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="w-40 xs:w-48 sm:w-64 md:w-80 bg-purple-800 text-white placeholder-purple-400 border border-purple-700 rounded-md py-1 sm:py-2 px-2 sm:px-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                  autoFocus
+                />
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 mt-2 w-full bg-white text-gray-900 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {searchResults.map((gist) => (
+                      <button
+                        key={gist.id}
+                        onClick={() => handleSearchSelect(gist.id)}
+                        className="w-full px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm hover:bg-gray-100 flex flex-col"
+                      >
+                        <span className="font-medium truncate">{gist.description || "No description"}</span>
+                        <span className="text-[10px] text-gray-600 truncate">@{gist.owner.login}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => setIsSearchOpen(true)} className="text-white hover:text-purple-300 focus:outline-none">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            )
           )}
 
           <button

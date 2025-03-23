@@ -122,6 +122,8 @@ export default function Home() {
         isGistList={true}
         onGistSelect={handleGistSelect}
         onSearchSubmit={handleSearchSubmit}
+        isSearchVisible={true} // Enable search only on Home
+
       />
       <div className="pt-[20px] relative z-0">
         <main className="flex-1 py-3 px-2 sm:px-2 lg:px-4">
