@@ -33,41 +33,10 @@ export default function GistDetailsExpanded({
 }: GistDetailsExpandedProps) {
   return (
     <div className="p-3 sm:p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">{gistDetails.description || "Untitled Gist"}</h3>
-        <div className="flex flex-wrap gap-2 sm:gap-4">
-          {!isFirst && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPreviousGist();
-              }}
-              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300"
-            >
-              <FaChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" /> Previous
-            </button>
-          )}
-          {!isLast && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onNextGist();
-              }}
-              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300"
-            >
-              Next <FaChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
-            </button>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onExpandGist(gist.id);
-            }}
-            className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300"
-          >
-            <FaCode className="w-3 h-3 sm:w-4 sm:h-4" /> Minimize
-          </button>
-        </div>
+      <div className="mb-3 sm:mb-4">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+          {gistDetails.description || "Untitled Gist"}
+        </h3>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-700 mb-3 sm:mb-4">
         <div>
@@ -95,6 +64,43 @@ export default function GistDetailsExpanded({
           <pre className="text-xs sm:text-sm bg-gray-100 p-2 rounded mt-1 sm:mt-2 font-mono overflow-x-auto max-h-40 sm:max-h-48">
             {file.content}
           </pre>
+          <div className="flex justify-between items-center mt-2 sm:mt-3">
+            {!isFirst && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreviousGist();
+                }}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300"
+              >
+                <FaChevronLeft className="w-3 h-3 sm:w-4 sm:h-4" /> Previous
+              </button>
+            )}
+            {/* Empty div to push Minimize to the center when Previous is absent */}
+            {isFirst && <div className="w-20 sm:w-24"></div>}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onExpandGist(gist.id);
+              }}
+              className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300 mx-auto"
+            >
+              <FaCode className="w-3 h-3 sm:w-4 sm:h-4" /> Minimize
+            </button>
+            {!isLast && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNextGist();
+                }}
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs sm:text-sm hover:bg-gray-300"
+              >
+                Next <FaChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+              </button>
+            )}
+            {/* Empty div to push Minimize to the center when Next is absent */}
+            {isLast && <div className="w-20 sm:w-24"></div>}
+          </div>
         </div>
       ))}
     </div>

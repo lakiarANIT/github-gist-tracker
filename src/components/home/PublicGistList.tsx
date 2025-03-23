@@ -1,4 +1,3 @@
-// src/components/home/PublicGistList.tsx
 import { useState, useEffect } from "react";
 import { Octokit } from "@octokit/core";
 import { useSession } from "next-auth/react";
@@ -43,7 +42,8 @@ export default function PublicGistList({
           ?.gistIds?.some((g) => g.id === gist.id)
       );
     }
-    result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
     setFilteredGists(result);
   }, [gists, selectedGroupId, gistGroups, githubUsername, excludeUserGists]);
 
@@ -188,7 +188,7 @@ export default function PublicGistList({
           })}
         </div>
       )}
-      {filteredGists.length > ITEMS_PER_PAGE && totalPages > 1 && (
+      {!expandedGistId && filteredGists.length > ITEMS_PER_PAGE && totalPages > 1 && (
         <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
           <button
             onClick={() => handlePageChange(currentPage - 1)}

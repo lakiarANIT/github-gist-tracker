@@ -7,6 +7,7 @@ import PublicGistList from "src/components/home/PublicGistList";
 import PublicSearchGists from "src/components/home/PublicSearchGist"; // Fixed typo
 import Navbar from "src/components/ui/Navbar";
 import { Gist, GistGroup } from "src/types/types";
+import Link from "next/link";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -30,12 +31,12 @@ export default function Home() {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
-        
+
         if (response.status === 429) {
           setIsRateLimited(true);
           throw new Error("Rate limit exceeded");
         }
-        
+
         if (!response.ok) throw new Error("Failed to fetch public data");
         const data = await response.json();
 
@@ -93,7 +94,6 @@ export default function Home() {
     setSelectedGistId(null);
   };
 
-  // New function to reset search and return to public gists view
   const resetSearch = () => {
     setFilteredSearchGists([]);
     setSelectedGistId(null);
@@ -122,10 +122,47 @@ export default function Home() {
         isGistList={true}
         onGistSelect={handleGistSelect}
         onSearchSubmit={handleSearchSubmit}
-        isSearchVisible={true} // Enable search only on Home
-
+        isSearchVisible={true}
       />
-      <div className="pt-[20px] relative z-0">
+
+      {/* Introductory Content Section */}
+      <div className="bg-gradient-to-b from-blue-50 to-gray-50 pt-20 pb-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4">
+            Discover GitHub Gist Tracker (GGT)
+          </h1>
+          <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Elevate your coding workflow with a powerful tool to create, manage, and explore
+            GitHub Gists—all in one place.
+          </p>
+          <div className="flex justify-center gap-4">
+            {status === "authenticated" ? (
+              <Link
+                href="/profile"
+                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Go to Profile
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="inline-block px-8 py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Sign In with GitHub
+              </Link>
+            )}
+            <Link
+              href="/learnmore"
+              className="inline-block px-8 py-3 bg-transparent text-blue-600 text-lg font-semibold border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Section */}
+      <div className="relative z-0" id="features">
         <main className="flex-1 py-3 px-2 sm:px-2 lg:px-4">
           <div className="max-w-5xl mx-auto">
             {(selectedGistId || filteredSearchGists.length > 0) ? (
@@ -145,7 +182,7 @@ export default function Home() {
                   }
                   selectedGistId={selectedGistId}
                   octokit={octokit}
-                  onResetSearch={resetSearch} // Pass reset function
+                  onResetSearch={resetSearch}
                 />
               </>
             ) : (

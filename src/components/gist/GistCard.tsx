@@ -71,7 +71,7 @@ export default function GistCard({
           <div className="text-xs sm:text-sm text-gray-600 mb-2 bg-gray-50 p-2 rounded border border-gray-200 font-mono h-20 sm:h-24 overflow-hidden">
             <p className="text-gray-500">#!/usr/bin/env {firstFile.language?.toLowerCase() ?? "text"}</p>
             <p className="mt-1 sm:mt-2 italic line-clamp-2 overflow-hidden text-ellipsis">
-              ** {gist.description || "No description"} **
+              ** {firstFile.content || "No description"} **
             </p>
           </div>
         )}

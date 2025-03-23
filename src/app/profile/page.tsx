@@ -127,19 +127,23 @@ export default function ProfilePage() {
         async (position) => {
           const { latitude, longitude } = position.coords;
           try {
-            const response = await fetch("/api/profile", {
+            const response = await fetch("/api/profile/updatelocation", {
               method: "PUT",
-              body: JSON.stringify({ location: { lat: latitude, lng: longitude } }),
               headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ location: { lat: latitude, lng: longitude } }),
               credentials: "include",
             });
-            if (response.ok) {
-              setShowLocationPrompt(false);
-              window.location.reload();
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.message || "Failed to update location");
             }
+
+            setShowLocationPrompt(false);
+            window.location.reload(); // Refresh to update session data
           } catch (error) {
             console.error("Error updating location:", error);
-            alert("Failed to update location.");
+            alert("Failed to update location. Please try again.");
           }
         },
         (error) => {
@@ -151,6 +155,7 @@ export default function ProfilePage() {
       alert("Geolocation is not supported by your browser.");
     }
   };
+
 
   const GroupList = ({
     gistGroups,
@@ -176,9 +181,8 @@ export default function ProfilePage() {
       <div className="w-full max-h-[50vh] overflow-y-auto bg-white rounded-md shadow-sm border border-gray-200">
         <button
           onClick={() => setSelectedGroupId("")}
-          className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${
-            selectedGroupId === "" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
-          }`}
+          className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${selectedGroupId === "" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
+            }`}
         >
           <FaFolder className="w-4 h-4 mr-2" />
           <span>All Gists</span>
@@ -192,9 +196,8 @@ export default function ProfilePage() {
               <button
                 key={group.id}
                 onClick={() => setSelectedGroupId(group.id)}
-                className={`w-full px-4 py-2 text-left text-sm flex items-center ${
-                  selectedGroupId === group.id ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
-                }`}
+                className={`w-full px-4 py-2 text-left text-sm flex items-center ${selectedGroupId === group.id ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-900"
+                  }`}
               >
                 <FaFolder className="w-4 h-4 mr-2" />
                 <div className="truncate flex-1">
@@ -333,6 +336,14 @@ export default function ProfilePage() {
           gistIds = (data.gists || []).map((gist: any) => (typeof gist === "string" ? gist : gist.id));
         }
 
+        if (gistIds.length === 0) {
+          if (isMounted.current) {
+            setGists([]); // Explicitly set to empty array
+            console.log("No gists found for this selection.");
+          }
+          return; // Exit early if no gists to fetch
+        }
+
         const gistPromises = gistIds.map((gistId) =>
           octokit.request("GET /gists/{gist_id}", {
             gist_id: gistId,
@@ -345,10 +356,18 @@ export default function ProfilePage() {
           .map((res) => res.value.data)
           .filter((gist, index, self) => gist.id && self.findIndex((g) => g.id === gist.id) === index);
 
-        if (isMounted.current) setGists(fullGists);
+        if (isMounted.current) {
+          setGists(fullGists.length > 0 ? fullGists : []);
+          if (fullGists.length === 0) {
+            console.log("No gists retrieved after fetching details.");
+          }
+        }
       } catch (error) {
         console.error("Error fetching Gists:", error);
-        if (isMounted.current) setGists([]);
+        if (isMounted.current) {
+          setGists([]);
+          alert("Failed to load gists. Please try again.");
+        }
       }
     };
 
@@ -366,20 +385,26 @@ export default function ProfilePage() {
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-base sm:text-lg text-gray-700">
-          Please{" "}
-          <a href="/auth/login" className="text-blue-600 hover:underline font-medium">
-            sign in
-          </a>{" "}
-          to view your profile.
-        </p>
+        <div className="text-center">
+          <p className="text-base sm:text-lg text-gray-700 mb-4">
+            <span className="typewriter inline-block">
+              Please sign in to view your profile.
+            </span>
+          </p>
+          <a
+            href="/auth/login"
+            className="inline-block px-6 py-2 text-sm sm:text-base text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Sign In
+          </a>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
-     
+
       <div className="pt-[4rem] max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6">
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
           <ProfileView
@@ -413,7 +438,7 @@ export default function ProfilePage() {
                 octokit={octokit}
                 setGists={setGists}
                 setGistGroups={setGistGroups}
-                setActiveTab={() => {}} // No-op
+                setActiveTab={() => { }} // No-op
                 githubUsername={githubUsername}
                 onCreateGroup={handleCreateGroup}
               />
@@ -422,11 +447,19 @@ export default function ProfilePage() {
         </div>
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Groups</h2>
-          <GroupList
-            gistGroups={gistGroups}
-            selectedGroupId={selectedGroupId}
-            setSelectedGroupId={setSelectedGroupId}
-          />
+          <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto">
+            {gists.length === 0 ? (
+              <p className="p-4 text-gray-600 text-center">No gists found for this selection. Create one above!</p>
+            ) : (
+              <GistList
+                gists={gists}
+                selectedGroupId={selectedGroupId}
+                gistGroups={gistGroups}
+                linkedGist={linkedGist}
+                onDeleteGist={handleDeleteGist}
+              />
+            )}
+          </div>
         </div>
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-x-auto">
           <GistList

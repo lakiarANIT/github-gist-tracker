@@ -75,7 +75,6 @@ export default function GistList({
         });
         const username = userResponse.data.login;
         setGithubUsername(username);
-        console.log("Fetched GitHub username:", username); // Debug
       } catch (error) {
         console.error("Error in fetchInitialData:", error);
         setError(error instanceof Error ? error.message : "An unknown error occurred");
@@ -182,7 +181,6 @@ export default function GistList({
   const isOwner = (gist: Gist): boolean => {
     const ownerLogin = gist.owner?.login?.toLowerCase();
     const userLogin = githubUsername?.toLowerCase();
-    console.log("Checking isOwner:", { ownerLogin, userLogin, result: !!userLogin && ownerLogin === userLogin }); // Debug
     return !!userLogin && ownerLogin === userLogin;
   };
 
@@ -264,7 +262,7 @@ export default function GistList({
           })}
         </div>
       )}
-      {gists.length > ITEMS_PER_PAGE && totalPages > 1 && (
+      {!expandedGistId && gists.length > ITEMS_PER_PAGE && totalPages > 1 && (
         <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
           <button
             onClick={() => handlePageChange(currentPage - 1)}

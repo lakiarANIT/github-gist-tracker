@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation"; // Import useRouter for redirection
 
 interface ProfileViewProps {
   showLocationPrompt: boolean;
@@ -7,8 +8,39 @@ interface ProfileViewProps {
   requestLocation: () => Promise<void>;
 }
 
-export default function ProfileView({ showLocationPrompt, setShowLocationPrompt, requestLocation }: ProfileViewProps) {
+export default function ProfileView({
+  showLocationPrompt,
+  setShowLocationPrompt,
+  requestLocation,
+}: ProfileViewProps) {
   const { data: session } = useSession();
+  const router = useRouter(); // For redirecting after deletion
+
+  const handleDeleteAccount = async () => {
+    if (!confirm("Are you sure you want to delete your account? This will also delete all your gist groups and cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/profile/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete account");
+      }
+
+      // Sign out the user and redirect to Home
+      await signOut({ redirect: false });
+      router.push("/"); // Redirect to Home page
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Please try again.");
+    }
+  };
 
   return (
     <>
@@ -61,6 +93,14 @@ export default function ProfileView({ showLocationPrompt, setShowLocationPrompt,
           </div>
         </div>
       )}
+      <div className="mt-6">
+        <button
+          onClick={handleDeleteAccount}
+          className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+        >
+          Delete My Account
+        </button>
+      </div>
     </>
   );
 }

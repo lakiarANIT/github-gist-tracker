@@ -217,17 +217,12 @@ export default function Navbar({
               </>
             ) : (
               <>
-                <Link
-                  href="/auth/register"
-                  className="text-xs sm:text-sm bg-transparent border-2 border-purple-400 text-purple-300 hover:bg-purple-400 hover:text-purple-900 px-3 sm:px-4 py-1 sm:py-1.5 rounded-md active:scale-95 transition-all duration-300 whitespace-nowrap"
-                >
-                  Sign Up
-                </Link>
+                
                 <button
                   onClick={() => signIn()}
                   className="bg-purple-700 text-xs sm:text-sm text-white hover:bg-purple-600 hover:shadow-md px-3 sm:px-4 py-1 sm:py-1.5 rounded-full active:scale-95 transition-all duration-300 whitespace-nowrap"
                 >
-                  Sign In
+                  Sign In with GitHub
                 </button>
               </>
             )}

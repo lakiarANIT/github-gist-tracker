@@ -41,57 +41,131 @@ function LoginComponent() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-      <button
-        onClick={handleGitHubSignIn}
-        className="w-full bg-gray-800 text-white p-2 rounded-md hover:bg-gray-700 disabled:bg-gray-500 mb-4"
-        disabled={isLoading}
-      >
-        {isLoading ? "Signing In..." : "Sign in with GitHub"}
-      </button>
-      <div className="my-4 flex items-center">
-        <hr className="flex-grow border-gray-300" />
-        <span className="px-2 text-gray-500">OR</span>
-        <hr className="flex-grow border-gray-300" />
-      </div>
-      <form onSubmit={handleCredentialsSignIn}>
-        <div className="mb-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded"
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start pt-10">
+      {/* Login Form Section - Prominent at the Top */}
+      <div className="max-w-md w-full mx-auto p-6 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">Login to GitHub Gist Tracker</h1>
+        <form onSubmit={handleCredentialsSignIn}>
+          <div className="mb-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isLoading}
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isLoading}
+            />
+          </div>
+          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
+          <button
+            type="submit"
+            className="w-full bg-purple-700 text-white p-2 rounded hover:bg-purple-800 disabled:bg-purple-400 transition-colors"
             disabled={isLoading}
-          />
+          >
+            {isLoading ? "Signing In..." : "Sign In"}
+          </button>
+        </form>
+        <div className="my-4 flex items-center">
+          <hr className="flex-grow border-gray-300" />
+          <span className="px-2 text-gray-500">OR</span>
+          <hr className="flex-grow border-gray-300" />
         </div>
-        <div className="mb-4">
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded"
-            disabled={isLoading}
-          />
-        </div>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
         <button
-          type="submit"
-          className="w-full bg-purple-700 text-white p-2 rounded disabled:bg-purple-400"
+          onClick={handleGitHubSignIn}
+          className="w-full bg-gray-800 text-white p-2 rounded-md hover:bg-gray-700 disabled:bg-gray-500 transition-colors"
           disabled={isLoading}
         >
-          {isLoading ? "Signing In..." : "Sign In with Email"}
+          {isLoading ? "Signing In..." : "Sign in with GitHub"}
         </button>
-      </form>
+      </div>
+
+      {/* Header Section - Below Login Form */}
+      <div className="text-center mt-10 mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+          Welcome to GitHub Gist Tracker (GGT)
+        </h1>
+        <p className="text-base sm:text-lg text-gray-600">
+          Unlock a seamless way to manage your GitHub Gists with GGT!
+        </p>
+      </div>
+
+      {/* Content Section - Pushed Down */}
+      <div className="max-w-5xl w-full flex flex-col lg:flex-row gap-8 px-4 sm:px-6 lg:px-8 mb-10">
+        {/* Left Column: Why Sign In with GitHub */}
+        <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+            Why Sign In with GitHub?
+          </h2>
+          <ul className="space-y-4 text-gray-700 text-sm sm:text-base">
+            <li>
+              <span className="font-medium text-gray-900">Unified Access:</span> Use your existing
+              GitHub account—no extra credentials needed.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Secure Authentication:</span> GitHub’s
+              OAuth ensures a fast, secure login trusted by developers worldwide.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Gist Management:</span> Instantly access
+              and manage your GitHub Gists in one place.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Version Control:</span> Track changes to
+              your Gists with GitHub’s built-in versioning.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Community Integration:</span> Share public
+              Gists and get feedback from the GitHub community.
+            </li>
+          </ul>
+        </div>
+
+        {/* Right Column: Added Features with GGT */}
+        <div className="flex-1 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+            Added Features with GGT
+          </h2>
+          <ul className="space-y-4 text-gray-700 text-sm sm:text-base">
+            <li>
+              <span className="font-medium text-gray-900">Organize Gists:</span> Group Gists into
+              custom categories for better organization.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Enhanced Editing:</span> Edit Gists
+              directly in GGT, synced seamlessly with GitHub.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Location Insights:</span> Tag Gists with
+              your location for added context.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Public Gist Discovery:</span> Explore and
+              interact with others’ public Gists within GGT.
+            </li>
+            <li>
+              <span className="font-medium text-gray-900">Personal Dashboard:</span> View all your
+              Gists and activity in a tailored dashboard.
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <LoginComponent />
     </Suspense>
   );
