@@ -9,6 +9,7 @@ import ProfileView from "./components/ProfileView";
 import CreateGistForm from "@app/gist/components/CreateGistForm";
 import GistList from "@app/gist/components/GistList";
 import PublicGistList from "src/components/home/PublicGistList";
+import Navbar from "@components/ui/Navbar";
 import { FaFolder } from "react-icons/fa";
 import ManageGistGroups from "@app/gist/components/ManageGistGroups";
 
@@ -34,6 +35,64 @@ const ManageGistGroupsContainer = ({
           <ManageGistGroups gistGroups={gistGroups} setGistGroups={setGistGroups} />
         </div>
       )}
+    </div>
+  );
+};
+
+const GroupList = ({
+  gistGroups,
+  selectedGroupId,
+  setSelectedGroupId,
+}: {
+  gistGroups: GistGroup[];
+  selectedGroupId: string;
+  setSelectedGroupId: (id: string) => void;
+}) => {
+  const nonEmptyGroups = gistGroups.filter((group) => (group.gistIds?.length ?? 0) > 0);
+  const sortedGroups = [...nonEmptyGroups].sort((a, b) => a.name.localeCompare(b.name));
+  const groupedGroups = sortedGroups.reduce((acc, group) => {
+    const firstLetter = group.name.charAt(0).toUpperCase();
+    if (!acc[firstLetter]) acc[firstLetter] = [];
+    acc[firstLetter].push(group);
+    return acc;
+  }, {} as Record<string, GistGroup[]>);
+
+  const letters = Object.keys(groupedGroups).sort();
+
+  return (
+    <div className="w-full max-h-[50vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+      <button
+        onClick={() => setSelectedGroupId("")}
+        className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${
+          selectedGroupId === "" ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+        }`}
+      >
+        <FaFolder className="w-4 h-4 mr-2" />
+        <span>All Gists</span>
+      </button>
+      {letters.map((letter) => (
+        <div key={letter}>
+          <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            {letter}
+          </h3>
+          {groupedGroups[letter].map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setSelectedGroupId(group.id)}
+              className={`w-full px-4 py-2 text-left text-sm flex items-center ${
+                selectedGroupId === group.id ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+              }`}
+            >
+              <FaFolder className="w-4 h-4 mr-2" />
+              <div className="truncate flex-1">
+                <span className="font-medium">{group.name}</span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({group.gistIds?.length ?? 0})</span>
+                <span className="block text-xs text-gray-600 dark:text-gray-400 truncate">@{group.owner?.login || "unknown"}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };
@@ -153,60 +212,6 @@ export default function ProfilePage() {
     } else {
       alert("Geolocation is not supported by your browser.");
     }
-  };
-
-  const GroupList = ({
-    gistGroups,
-    selectedGroupId,
-    setSelectedGroupId,
-  }: {
-    gistGroups: GistGroup[];
-    selectedGroupId: string;
-    setSelectedGroupId: (id: string) => void;
-  }) => {
-    const nonEmptyGroups = gistGroups.filter((group) => (group.gistIds?.length ?? 0) > 0);
-    const sortedGroups = [...nonEmptyGroups].sort((a, b) => a.name.localeCompare(b.name));
-    const groupedGroups = sortedGroups.reduce((acc, group) => {
-      const firstLetter = group.name.charAt(0).toUpperCase();
-      if (!acc[firstLetter]) acc[firstLetter] = [];
-      acc[firstLetter].push(group);
-      return acc;
-    }, {} as Record<string, GistGroup[]>);
-
-    const letters = Object.keys(groupedGroups).sort();
-
-    return (
-      <div className="w-full max-h-[50vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => setSelectedGroupId("")}
-          className={`w-full px-4 py-2 text-left text-sm font-medium flex items-center ${selectedGroupId === "" ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-        >
-          <FaFolder className="w-4 h-4 mr-2" />
-          <span>All Gists</span>
-        </button>
-        {letters.map((letter) => (
-          <div key={letter}>
-            <h3 className="px-4 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-              {letter}
-            </h3>
-            {groupedGroups[letter].map((group) => (
-              <button
-                key={group.id}
-                onClick={() => setSelectedGroupId(group.id)}
-                className={`w-full px-4 py-2 text-left text-sm flex items-center ${selectedGroupId === group.id ? "bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"}`}
-              >
-                <FaFolder className="w-4 h-4 mr-2" />
-                <div className="truncate flex-1">
-                  <span className="font-medium">{group.name}</span>
-                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">({group.gistIds?.length ?? 0})</span>
-                  <span className="block text-xs text-gray-600 dark:text-gray-400 truncate">@{group.owner?.login || "unknown"}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-    );
   };
 
   const handleDeleteGist = async (gistId: string) => {
@@ -400,6 +405,15 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      <div className="fixed top-0 left-0 w-full z-20">
+        <Navbar
+          gistGroups={gistGroups}
+          gists={gists}
+          selectedGroupId={selectedGroupId}
+          setSelectedGroupId={setSelectedGroupId}
+          isGistList={false}
+        />
+      </div>
       <div className="pt-[4rem] max-w-6xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6">
         <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
           <ProfileView
@@ -433,7 +447,7 @@ export default function ProfilePage() {
                 octokit={octokit}
                 setGists={setGists}
                 setGistGroups={setGistGroups}
-                setActiveTab={() => { }}
+                setActiveTab={() => {}}
                 githubUsername={githubUsername}
                 onCreateGroup={handleCreateGroup}
               />
@@ -442,30 +456,30 @@ export default function ProfilePage() {
         </div>
         <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Groups</h2>
-          <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
-            {gists.length === 0 ? (
-              <p className="p-4 text-gray-600 dark:text-gray-400 text-center">No gists found for this selection. Create one above!</p>
-            ) : (
-              <GistList
-                gists={gists}
-                selectedGroupId={selectedGroupId}
-                gistGroups={gistGroups}
-                linkedGist={linkedGist}
-                onDeleteGist={handleDeleteGist}
-              />
-            )}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
-          <GistList
-            gists={gists}
-            selectedGroupId={selectedGroupId}
+          <GroupList
             gistGroups={gistGroups}
-            linkedGist={linkedGist}
-            onDeleteGist={handleDeleteGist}
+            selectedGroupId={selectedGroupId}
+            setSelectedGroupId={setSelectedGroupId}
           />
         </div>
-        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto mb-4 sm:mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+            {selectedGroupId === "" ? "All Gists" : gistGroups.find(g => g.id === selectedGroupId)?.name || "Selected Group"} ({gists.length})
+          </h2>
+          {gists.length === 0 ? (
+            <p className="text-gray-600 dark:text-gray-400 text-center">No gists found for this selection. Create one above!</p>
+          ) : (
+            <GistList
+              gists={gists}
+              selectedGroupId={selectedGroupId}
+              gistGroups={gistGroups}
+              linkedGist={linkedGist}
+              onDeleteGist={handleDeleteGist}
+            />
+          )}
+        </div>
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Public Gists</h2>
           <PublicGistList
             gists={publicGists}
             selectedGroupId={selectedGroupId}
