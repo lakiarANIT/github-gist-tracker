@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
 import { Gist, GistGroup, NewGist } from "src/types/types";
 import CreateGistForm from "../components/CreateGistForm";
+import Navbar from "@components/ui/Navbar";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
   const { data: session, status } = useSession();
