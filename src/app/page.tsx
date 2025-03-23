@@ -1,10 +1,10 @@
-// src/app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { Octokit } from "@octokit/core";
 import PublicGistList from "src/components/home/PublicGistList";
+import PublicSearchGists from "src/components/home/PublicSearchGist"; // Fixed typo
 import Navbar from "src/components/ui/Navbar";
 import { Gist, GistGroup } from "src/types/types";
 
@@ -13,15 +13,19 @@ export default function Home() {
   const [gists, setGists] = useState<Gist[]>([]);
   const [gistGroups, setGistGroups] = useState<GistGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+  const [selectedGistId, setSelectedGistId] = useState<string | null>(null);
+  const [filteredSearchGists, setFilteredSearchGists] = useState<Gist[]>([]);
   const [loading, setLoading] = useState(true);
   const [octokit, setOctokit] = useState<Octokit | null>(null);
   const [isRateLimited, setIsRateLimited] = useState(false);
-  const [typewriterText, setTypewriterText] = useState("");
 
   useEffect(() => {
+    if (!loading && gists.length > 0 && gistGroups.length > 0) {
+      return;
+    }
+
     const initialize = async () => {
       try {
-        // Fetch public gists
         const response = await fetch("/api/public-gist-groups", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -34,10 +38,20 @@ export default function Home() {
         
         if (!response.ok) throw new Error("Failed to fetch public data");
         const data = await response.json();
-        setGistGroups(data.groups || []);
-        setGists(data.gists || []);
 
-        // Initialize Octokit if logged in
+        setGistGroups((prev) => {
+          const newGroups = data.groups || [];
+          const prevIds = prev.map((g: GistGroup) => g.id).join(",");
+          const newIds = newGroups.map((g: GistGroup) => g.id).join(",");
+          return prevIds === newIds ? prev : newGroups;
+        });
+        setGists((prev) => {
+          const newGists = data.gists || [];
+          const prevIds = prev.map((g: Gist) => g.id).join(",");
+          const newIds = newGists.map((g: Gist) => g.id).join(",");
+          return prevIds === newIds ? prev : newGists;
+        });
+
         if (status === "authenticated" && session?.user?.email) {
           const tokenResponse = await fetch("/api/github-token", {
             method: "GET",
@@ -62,36 +76,28 @@ export default function Home() {
       }
     };
     initialize();
-  }, [status, session]);
+  }, [status, session, loading, gists.length, gistGroups.length]);
 
-  // Typewriter effect
-  useEffect(() => {
-    if (loading || isRateLimited) {
-      const messages = isRateLimited 
-        ? "Rate limit reached, please wait..."
-        : "Loading gists, please wait...";
-      
-      let i = 0;
-      const speed = 100; // Typing speed in milliseconds
-      
-      const type = () => {
-        if (i < messages.length) {
-          setTypewriterText(messages.substring(0, i + 1));
-          i++;
-          setTimeout(type, speed);
-        } else {
-          // Reset and start over after a pause
-          setTimeout(() => {
-            i = 0;
-            setTypewriterText("");
-            type();
-          }, 2000);
-        }
-      };
-      
-      type();
-    }
-  }, [loading, isRateLimited]);
+  const memoizedGists = useMemo(() => [...gists], [gists]);
+
+  const handleGistSelect = (gistId: string) => {
+    setSelectedGistId(gistId);
+    setFilteredSearchGists([]);
+  };
+
+  const handleSearchSubmit = (query: string) => {
+    const filtered = memoizedGists.filter((gist) =>
+      gist.description?.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredSearchGists(filtered);
+    setSelectedGistId(null);
+  };
+
+  // New function to reset search and return to public gists view
+  const resetSearch = () => {
+    setFilteredSearchGists([]);
+    setSelectedGistId(null);
+  };
 
   if (loading || isRateLimited) {
     return (
@@ -99,8 +105,7 @@ export default function Home() {
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-t-blue-600 border-gray-200 rounded-full animate-spin mx-auto mb-4"></div>
           <div className="text-lg font-mono text-gray-700">
-            {typewriterText}
-            <span className="animate-blink">|</span>
+            {isRateLimited ? "Rate limit reached, please wait..." : "Loading gists, please wait..."}
           </div>
         </div>
       </div>
@@ -111,26 +116,52 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Navbar
         gistGroups={gistGroups}
-        gists={gists}
+        gists={memoizedGists}
         selectedGroupId={selectedGroupId}
         setSelectedGroupId={setSelectedGroupId}
         isGistList={true}
+        onGistSelect={handleGistSelect}
+        onSearchSubmit={handleSearchSubmit}
       />
       <div className="pt-[20px] relative z-0">
         <main className="flex-1 py-3 px-2 sm:px-2 lg:px-4">
           <div className="max-w-5xl mx-auto">
-            <header className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Public Gists</h1>
-              <p className="text-sm text-gray-500">
-                Explore {gists.length} gists from {gistGroups.length} groups
-              </p>
-            </header>
-            <PublicGistList
-              gists={gists}
-              selectedGroupId={selectedGroupId}
-              gistGroups={gistGroups}
-              octokit={octokit}
-            />
+            {(selectedGistId || filteredSearchGists.length > 0) ? (
+              <>
+                <header className="mb-6">
+                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Search Results</h1>
+                  <p className="text-sm text-gray-500">
+                    Showing {selectedGistId ? "1 selected gist" : `${filteredSearchGists.length} matching gists`}
+                  </p>
+                </header>
+                <PublicSearchGists
+                  gists={memoizedGists}
+                  filteredGists={
+                    selectedGistId
+                      ? memoizedGists.filter((g: Gist) => g.id === selectedGistId)
+                      : filteredSearchGists
+                  }
+                  selectedGistId={selectedGistId}
+                  octokit={octokit}
+                  onResetSearch={resetSearch} // Pass reset function
+                />
+              </>
+            ) : (
+              <>
+                <header className="mb-6">
+                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Public Gists</h1>
+                  <p className="text-sm text-gray-500">
+                    Explore {memoizedGists.length} gists from {gistGroups.length} groups
+                  </p>
+                </header>
+                <PublicGistList
+                  gists={memoizedGists}
+                  selectedGroupId={selectedGroupId}
+                  gistGroups={gistGroups}
+                  octokit={octokit}
+                />
+              </>
+            )}
           </div>
         </main>
       </div>
