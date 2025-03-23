@@ -1,89 +1,28 @@
-// EditProfilePage.tsx
+// src/components/profile/EditProfilePage.tsx
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FaPencilAlt } from "react-icons/fa";
-import { defaultAvatars } from "@lib/avatars";
-
-const profileSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(50),
-  email: z.string().email("Invalid email address"),
-  bio: z.string().max(160, "Bio must not exceed 160 characters").optional(),
-  password: z.string().min(8, "Password must be at least 8 characters").optional().or(z.literal("")),
-  confirmPassword: z.string().optional(),
-}).refine((data) => !data.password || data.password === data.confirmPassword, {
-  message: "Passwords must match",
-  path: ["confirmPassword"],
-});
-
-type ProfileForm = z.infer<typeof profileSchema>;
+import { useProfileEdit } from "@hooks/profile/useProfileEdit"; // Adjusted path
+import AvatarPicker from "@components/profile/AvatarPicker";
 
 export default function EditProfilePage() {
-  const { data: session, status, update } = useSession();
   const router = useRouter();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(session?.user?.avatar || null);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState({
-    avatar: false,
-    name: false,
-    email: false,
-    bio: false,
-    password: false,
-  });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
-
   const {
+    status,
+    avatarPreview,
+    setAvatarPreview,
+    error,
+    isSubmitting,
     register,
     handleSubmit,
-    watch,
-    formState: { errors },
+    errors,
     getValues,
-  } = useForm<ProfileForm>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: session?.user?.name || "",
-      email: session?.user?.email || "",
-      bio: session?.user?.bio || "",
-    },
-  });
-
-  const bioValue = watch("bio") || "";
-  const bioLength = bioValue.length;
-  const maxBioLength = 160;
-
-  const handleUpdate = async (field: keyof typeof isSubmitting, data: any) => {
-    setIsSubmitting((prev) => ({ ...prev, [field]: true }));
-    setError(null);
-
-    const formData = new FormData();
-    formData.append(field, data);
-
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        await update({ ...session, user: { ...session?.user, ...result.user } });
-        if (field === "avatar") setAvatarPreview(result.user.avatar);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || `Failed to update ${field}`);
-      }
-    } catch (err) {
-      setError("An unexpected error occurred");
-    } finally {
-      setIsSubmitting((prev) => ({ ...prev, [field]: false }));
-    }
-  };
+    bioLength,
+    maxBioLength,
+    handleUpdate,
+  } = useProfileEdit();
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,7 +39,18 @@ export default function EditProfilePage() {
     setShowAvatarPicker(false);
   };
 
-  const onSubmitPassword = (data: ProfileForm) => handleUpdate("password", data.password);
+  // Updated to match ProfileForm type
+  const onSubmitPassword = (data: {
+    name: string;
+    email: string;
+    bio?: string | undefined;
+    password?: string | undefined;
+    confirmPassword?: string | undefined;
+  }) => {
+    if (data.password) { // Check if password exists since it's optional
+      handleUpdate("password", data.password);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -123,78 +73,16 @@ export default function EditProfilePage() {
               </div>
             )}
 
-            {/* Avatar Section */}
-            <div className="mb-4 sm:mb-6 p-2 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="relative">
-                    <img
-                      src={avatarPreview || session?.user?.avatar || "/default-avatar.png"}
-                      alt="Avatar"
-                      className="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                      onError={(e) => (e.currentTarget.src = "/default-avatar.png")}
-                    />
-                    <button
-                      onClick={() => setShowAvatarPicker(true)}
-                      className="absolute bottom-0 right-0 bg-gray-200 dark:bg-gray-700 p-1 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600"
-                      disabled={isSubmitting.avatar}
-                    >
-                      <FaPencilAlt className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    </button>
-                  </div>
-                  {isSubmitting.avatar && (
-                    <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">Updating...</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setShowAvatarPicker(true)}
-                  className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:border-gray-400 dark:disabled:border-gray-500"
-                  disabled={isSubmitting.avatar}
-                >
-                  Change
-                </button>
-              </div>
+            <AvatarPicker
+              avatarPreview={avatarPreview}
+              setAvatarPreview={setAvatarPreview}
+              isSubmittingAvatar={isSubmitting.avatar}
+              handleAvatarChange={handleAvatarChange}
+              handleAvatarSelect={handleAvatarSelect}
+              showAvatarPicker={showAvatarPicker}
+              setShowAvatarPicker={setShowAvatarPicker}
+            />
 
-              {showAvatarPicker && (
-                <div className="mt-2 sm:mt-4 p-2 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <div className="flex justify-between items-center mb-2 sm:mb-4">
-                    <h3 className="text-md font-medium text-gray-800 dark:text-gray-200">Choose Avatar</h3>
-                    <button
-                      onClick={() => setShowAvatarPicker(false)}
-                      className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-5 gap-2">
-                    {defaultAvatars.map((avatarUrl, index) => (
-                      <img
-                        key={index}
-                        src={avatarUrl}
-                        alt={`Avatar ${index + 1}`}
-                        className={`w-12 h-12 rounded-full cursor-pointer object-cover border ${
-                          avatarPreview === avatarUrl ? "border-blue-500 dark:border-blue-400" : "border-gray-200 dark:border-gray-600"
-                        } hover:border-blue-300 dark:hover:border-blue-500`}
-                        onClick={() => handleAvatarSelect(avatarUrl)}
-                      />
-                    ))}
-                  </div>
-                  <label className="block mt-2 sm:mt-4 text-center text-sm text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
-                    Upload Custom Avatar
-                    <input
-                      id="avatar"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                      className="hidden"
-                      disabled={isSubmitting.avatar}
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {/* Form Fields */}
             <div className="space-y-4 sm:space-y-6">
               {/* Name Section */}
               <div className="p-2 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -312,7 +200,6 @@ export default function EditProfilePage() {
               </div>
             </div>
 
-            {/* Back to Profile */}
             <div className="mt-4 sm:mt-6 flex justify-end">
               <button
                 onClick={() => router.push("/profile")}
