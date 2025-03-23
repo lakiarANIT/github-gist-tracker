@@ -86,7 +86,7 @@ export function useProfileData() {
             });
             if (!response.ok) throw new Error("Failed to update location");
             setShowLocationPrompt(false);
-            window.location.reload();
+            window.location.reload(); // Refresh to update session data
           } catch (error) {
             console.error("Error updating location:", error);
             alert("Failed to update location. Please try again.");

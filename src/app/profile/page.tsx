@@ -10,9 +10,9 @@ import GroupList from "@components/profile/GroupList";
 import CreateGistForm from "@app/gist/components/CreateGistForm";
 import GistList from "@app/gist/components/GistList";
 import PublicGistList from "src/components/home/PublicGistList";
-import { useProfileData } from "@hooks/profile/useProfileData";
-import { useGistActions } from "@hooks/profile/useGistActions";
-import { useGroupActions } from "@hooks/profile/useGroupActions";
+import { useProfileData } from "@hooks/profile/useProfileData"; // Adjusted path
+import { useGistActions } from "@hooks/profile/useGistActions"; // Adjusted path
+import { useGroupActions } from "@hooks/profile/useGroupActions"; // Adjusted path
 
 export default function ProfilePage() {
   const {
@@ -95,7 +95,7 @@ export default function ProfilePage() {
           <ProfileView
             showLocationPrompt={showLocationPrompt}
             setShowLocationPrompt={setShowLocationPrompt}
-            requestLocation={requestLocation}
+            requestLocation={requestLocation} // Passed from useProfileData
           />
         </div>
         <ManageGistGroupsContainer gistGroups={gistGroups} setGistGroups={setGistGroups} />
