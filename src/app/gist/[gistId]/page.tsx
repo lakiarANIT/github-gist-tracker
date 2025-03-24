@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@hooks/gist/useAuth";
 import { useGistData } from "@hooks/gist/useGistData";
 import { useGroupActions } from "@hooks/gist/useGroupActions";
-import CreateGistForm from "../components/CreateGistForm";
+import CreateGistForm from "../../../components/gist/CreateGistForm";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
   const router = useRouter();

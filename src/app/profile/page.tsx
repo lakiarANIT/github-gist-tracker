@@ -7,8 +7,8 @@ import Navbar from "@components/ui/Navbar";
 import ProfileView from "@components/profile/ProfileView";
 import ManageGistGroupsContainer from "@components/profile/ManageGistGroupsContainer";
 import GroupList from "@components/profile/GroupList";
-import CreateGistForm from "@app/gist/components/CreateGistForm";
-import GistList from "@app/gist/components/GistList";
+import CreateGistForm from "@components/gist/CreateGistForm";
+import GistList from "@components/gist/GistList";
 import PublicGistList from "src/components/home/PublicGistList";
 import { useProfileData } from "@hooks/profile/useProfileData"; // Adjusted path
 import { useGistActions } from "@hooks/profile/useGistActions"; // Adjusted path

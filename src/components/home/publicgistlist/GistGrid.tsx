@@ -1,5 +1,5 @@
 import GistCard from "@components/gist/GistCard";
-import GistDetailsExpanded from "@app/gist/components/GistDetailsExpanded";
+import GistDetailsExpanded from "@components/gist/GistDetailsExpanded";
 import { Gist } from "src/types/types";
 
 interface GistGridProps {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GistGroup } from "src/types/types";
-import ManageGistGroups from "@app/gist/components/ManageGistGroups";
+import ManageGistGroups from "@components/gist/ManageGistGroups";
 
 interface ManageGistGroupsContainerProps {
   gistGroups: GistGroup[];
