@@ -1,3 +1,4 @@
+"use client";
 interface GitHubSignInButtonProps {
     isLoading: boolean;
     handleGitHubSignIn: () => Promise<void>;
