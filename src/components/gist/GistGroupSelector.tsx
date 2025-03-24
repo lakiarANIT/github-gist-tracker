@@ -50,7 +50,7 @@ export default function GistGroupSelector({
         onChange={(e) => setSelectedGroupId(e.target.value)}
         className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
       >
-        <option value="">Select a group (optional)</option>
+        <option value="">Select a group</option>
         {validGroups.map((group) => (
           <option key={group.id} value={group.id}>
             {group.name}

@@ -36,7 +36,7 @@ export default function ProfilePage() {
   const [newGist, setNewGist] = useState<NewGist>({
     description: "",
     files: [{ filename: "", content: "", language: "Text" }],
-    isPublic: false,
+    isPublic: true,
   });
   const [linkedGist, setLinkedGist] = useState<string | null>(null);
 

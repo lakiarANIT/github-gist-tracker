@@ -1,4 +1,3 @@
-// src/app/profile/components/CreateGistForm.tsx
 import { Dispatch, SetStateAction } from "react";
 import { Gist, GistGroup, NewGist } from "src/types/types";
 import { Octokit } from "@octokit/core";
@@ -51,12 +50,18 @@ export default function CreateGistForm({
   const isEditing = !!gistId;
   console.log("CreateGistForm rendered. gistId:", gistId, "isEditing:", isEditing);
 
+  // Ensure newGist.isPublic defaults to true if not set
+  const effectiveNewGist = {
+    ...newGist,
+    isPublic: newGist.isPublic !== undefined ? newGist.isPublic : true, // Default to true
+  };
+
   const { handleSubmit } = useGistActions(
     octokit,
-    newGist, // Added newGist
+    effectiveNewGist, // Use effectiveNewGist here
     setGists,
     setNewGist,
-    newGroupName, // Added newGroupName
+    newGroupName,
     setNewGroupName,
     setLinkedGist,
     setActiveTab,
@@ -64,7 +69,7 @@ export default function CreateGistForm({
     onCreateGroup
   );
 
-  const { handleAddFile, handleDeleteFile, handleFileChange } = useFileManagement(newGist, setNewGist);
+  const { handleAddFile, handleDeleteFile, handleFileChange } = useFileManagement(effectiveNewGist, setNewGist);
 
   return (
     <>
@@ -75,11 +80,11 @@ export default function CreateGistForm({
         <input
           type="text"
           placeholder={isEditing ? "Gist description" : "Shared description for all Gists..."}
-          value={newGist.description}
-          onChange={(e) => setNewGist({ ...newGist, description: e.target.value })}
+          value={effectiveNewGist.description}
+          onChange={(e) => setNewGist({ ...effectiveNewGist, description: e.target.value })}
           className="w-full p-2 mb-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         />
-        {newGist.files.map((file, index) => (
+        {effectiveNewGist.files.map((file, index) => (
           <FileInput
             key={index}
             file={file}
@@ -92,22 +97,22 @@ export default function CreateGistForm({
             handleDeleteFile={handleDeleteFile}
           />
         ))}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
           <button
             type="button"
             onClick={handleAddFile}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
           >
             Add another file
           </button>
           {!isEditing && (
             <select
-              value={newGist.isPublic ? "public" : "secret"}
-              onChange={(e) => setNewGist({ ...newGist, isPublic: e.target.value === "public" })}
-              className="p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              value={effectiveNewGist.isPublic ? "public" : "secret"}
+              onChange={(e) => setNewGist({ ...effectiveNewGist, isPublic: e.target.value === "public" })}
+              className="w-full sm:w-auto p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
             >
-              <option value="secret">Create secret gists</option>
               <option value="public">Create public gists</option>
+              <option value="secret">Create secret gists</option>
             </select>
           )}
         </div>
@@ -124,7 +129,7 @@ export default function CreateGistForm({
           type="submit"
           className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 dark:hover:bg-green-500 transition-colors"
         >
-          {isEditing ? "Update Gist" : newGist.isPublic ? "Create public gists" : "Create secret gists"}
+          {isEditing ? "Update Gist" : effectiveNewGist.isPublic ? "Create public gists" : "Create secret gists"}
         </button>
       </form>
     </>
