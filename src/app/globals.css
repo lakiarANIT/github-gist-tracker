@@ -70,11 +70,11 @@ textarea:focus {
 }
 
 /* Ensure pre blocks have visible text */
-pre {
+/* pre {
   -webkit-user-select: text;
   user-select: text;
   white-space: pre-wrap;
-}
+} */
 
 /* Force text and background colors for pre blocks */
 pre.bg-gray-100 {
