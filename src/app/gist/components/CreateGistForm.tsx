@@ -1,8 +1,7 @@
-// CreateGistForm.tsx
+// src/app/profile/components/CreateGistForm.tsx
 import { FaTrash } from "react-icons/fa";
 import { Gist, GistFile, GistGroup, NewGist } from "src/types/types";
 import { Octokit } from "@octokit/core";
-import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction } from "react";
 
 interface CreateGistFormProps {
@@ -22,6 +21,8 @@ interface CreateGistFormProps {
   setActiveTab: (tab: "profile" | "postGist") => void;
   githubUsername: string;
   onCreateGroup: (groupName: string) => Promise<GistGroup>;
+  gistId?: string;
+  originalGist?: Gist;
 }
 
 interface GitHubGistFile {
@@ -50,13 +51,15 @@ export default function CreateGistForm({
   setActiveTab,
   githubUsername,
   onCreateGroup,
+  gistId,
+  originalGist,
 }: CreateGistFormProps) {
-  const router = useRouter();
-  const isEditing = !!window.location.pathname.includes("/edit/");
-  const gistId = isEditing ? window.location.pathname.split("/").pop() : null;
+  const isEditing = !!gistId;
+  console.log("CreateGistForm rendered. gistId:", gistId, "isEditing:", isEditing);
 
   const createGists = async (description: string, files: GistFile[], isPublic: boolean): Promise<Gist[]> => {
     if (!octokit) throw new Error("Octokit not initialized.");
+    console.log("Creating new Gists with:", { description, files, isPublic });
     const createdGists: Gist[] = [];
     for (const file of files) {
       if (!file.filename.trim() || !file.content.trim()) continue;
@@ -117,16 +120,40 @@ export default function CreateGistForm({
     return createdGists;
   };
 
-  const updateGist = async (gistId: string, description: string, files: GistFile[]): Promise<Gist> => {
+  const updateGist = async (
+    gistId: string,
+    description: string,
+    files: GistFile[],
+    originalFiles?: { [key: string]: GitHubGistFile }
+  ): Promise<Gist> => {
     if (!octokit) throw new Error("Octokit not initialized.");
-    const gistFiles: { [key: string]: { content: string } } = {};
+    console.log("Updating Gist with:", { gistId, description, files, originalFiles });
+
+    // Define gistFiles with our intended type, including null for deletions
+    const gistFiles: { [key: string]: { content?: string; filename?: string | null } | null } = {};
+
+    // Include all files, even unchanged ones, when editing
     files.forEach((file) => {
-      if (file.filename && file.content) gistFiles[file.filename] = { content: file.content };
+      if (file.filename) {
+        gistFiles[file.filename] = { content: file.content || "" };
+      }
     });
+
+    // Mark deleted files as null
+    if (originalFiles) {
+      Object.keys(originalFiles).forEach((filename) => {
+        if (!files.some((file) => file.filename === filename)) {
+          gistFiles[filename] = null;
+        }
+      });
+    }
+
+    console.log("Sending PATCH request with files:", gistFiles);
     const response = await octokit.request("PATCH /gists/{gist_id}", {
       gist_id: gistId,
       description,
-      files: gistFiles,
+      // Type assertion to match Octokit’s stricter type, safe because GitHub API accepts null
+      files: gistFiles as { [key: string]: { content?: string; filename?: string | null } },
       headers: { "X-GitHub-Api-Version": "2022-11-28" },
     });
     const data = response.data as {
@@ -144,6 +171,7 @@ export default function CreateGistForm({
     if (!data.id || !data.html_url || !data.created_at || !data.updated_at) {
       throw new Error("Invalid Gist response from GitHub API");
     }
+    console.log("Updated Gist response:", data);
     return {
       id: data.id,
       html_url: data.html_url,
@@ -192,19 +220,25 @@ export default function CreateGistForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validFiles = newGist.files.filter((file) => file.filename.trim() && file.content.trim());
-    if (validFiles.length === 0) {
+
+    // For updates, allow submission even if no new content is added, as long as there’s at least one file
+    if (!isEditing && validFiles.length === 0) {
       alert("Please provide at least one file with a filename and content.");
       return;
     }
+    if (isEditing && newGist.files.length === 0) {
+      alert("You must keep at least one file when updating a Gist.");
+      return;
+    }
 
+    console.log("Submitting form. isEditing:", isEditing, "gistId:", gistId);
     try {
       if (isEditing && gistId) {
-        const updatedGist = await updateGist(gistId, newGist.description, validFiles);
+        const updatedGist = await updateGist(gistId, newGist.description, newGist.files, originalGist?.files);
         setGists((prev) => prev.map((g) => (g.id === updatedGist.id ? updatedGist : g)));
         alert("Gist updated successfully!");
       } else {
         const groupId = selectedGroupId || "";
-
         const newGists = await createGists(newGist.description, validFiles, newGist.isPublic);
         if (newGists.length === 0) throw new Error("No Gists were created.");
 
@@ -227,7 +261,7 @@ export default function CreateGistForm({
       }
 
       setNewGist({ description: "", files: [{ filename: "", content: "", language: "Text" }], isPublic: false });
-      setNewGroupName(""); // Reset even though not used for adding here
+      setNewGroupName("");
       setLinkedGist(null);
       setActiveTab("profile");
     } catch (error: any) {
@@ -338,6 +372,7 @@ export default function CreateGistForm({
             value={newGist.isPublic ? "public" : "secret"}
             onChange={(e) => setNewGist({ ...newGist, isPublic: e.target.value === "public" })}
             className="p-2 border border-gray-300 dark:border-gray-700 rounded focus:outline-none focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            disabled={isEditing}
           >
             <option value="secret">Create secret gists</option>
             <option value="public">Create public gists</option>

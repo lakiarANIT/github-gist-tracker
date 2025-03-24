@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Octokit } from "@octokit/core";
 import { Gist, GistGroup, NewGist } from "src/types/types";
 import CreateGistForm from "../components/CreateGistForm";
-import Navbar from "@components/ui/Navbar";
 
 export default function EditGistPage({ params }: { params: Promise<{ gistId: string }> }) {
   const { data: session, status } = useSession();
@@ -56,6 +55,7 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
           headers: { "X-GitHub-Api-Version": "2022-11-28" },
         });
         const gistData = gistResponse.data as Gist;
+        console.log("Fetched gist in edit/page.tsx:", gistData); // Debug log
         setGist(gistData);
         setNewGist({
           description: gistData.description || "",
@@ -171,6 +171,8 @@ export default function EditGistPage({ params }: { params: Promise<{ gistId: str
           setActiveTab={() => router.push("/profile")}
           githubUsername={githubUsername}
           onCreateGroup={handleCreateGroup}
+          gistId={gist.id} // Ensure gist.id is passed
+          originalGist={gist}
         />
       </div>
     </div>
