@@ -1,12 +1,10 @@
-// File: src/app/api/gist-groups/[groupId]/gists/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@lib/authOptions";
 import { connectDB } from "@lib/database";
-import GistGroup from "@models/GistGroup"; // Default import for the model
+import GistGroup from "@models/GistGroup";
 import mongoose from "mongoose";
 
-// Define a local interface for the Mongoose document, mirroring GistGroupDocument
 interface LocalGistGroupDocument extends mongoose.Document {
   userId: string | mongoose.Types.ObjectId;
   name: string;
@@ -19,7 +17,6 @@ export async function POST(req: Request, context: { params: Promise<{ groupId: s
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Await params to get groupId
   const { groupId } = await context.params;
   const { gistId } = await req.json();
 
@@ -30,7 +27,6 @@ export async function POST(req: Request, context: { params: Promise<{ groupId: s
   await connectDB();
 
   try {
-    // Type the result of findOne as LocalGistGroupDocument
     const group = await GistGroup.findOne({ _id: groupId, userId: session.user.id }) as LocalGistGroupDocument | null;
     if (!group) {
       return NextResponse.json({ error: "Group not found or not owned by user" }, { status: 404 });
@@ -54,13 +50,11 @@ export async function GET(req: Request, context: { params: Promise<{ groupId: st
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Await params to get groupId
   const { groupId } = await context.params;
 
   await connectDB();
 
   try {
-    // Type the result of findOne().lean() as a plain object with gistIds
     const group = await GistGroup.findOne({ _id: groupId, userId: session.user.id }).lean() as { gistIds: string[] } | null;
     if (!group) {
       return NextResponse.json({ error: "Group not found or not owned by user" }, { status: 404 });

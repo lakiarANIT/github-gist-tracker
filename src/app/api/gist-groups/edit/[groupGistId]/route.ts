@@ -1,4 +1,3 @@
-// app/api/gist-groups/edit/[groupGistId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@lib/database";
 import GistGroup from "src/models/GistGroup";
@@ -14,7 +13,6 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Extract groupGistId from the URL
     const url = new URL(req.url);
     const groupGistId = url.pathname.split("/").pop();
     const { name } = await req.json();
@@ -45,7 +43,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ group: gistGroup }, { status: 200 });
   } catch (error) {
-    console.error("Error editing gist group:", error);
     return NextResponse.json({ error: "Failed to update gist group" }, { status: 500 });
   }
 }

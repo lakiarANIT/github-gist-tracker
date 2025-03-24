@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
-export function useProfileActions() { // No need for setShowLocationPrompt here
+export function useProfileActions() { 
   const router = useRouter();
 
   const handleDeleteAccount = async () => {

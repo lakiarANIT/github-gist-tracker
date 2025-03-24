@@ -47,13 +47,14 @@ export default function GistGrid({
                 isExpanded={isExpanded}
                 isStarred={isStarred}
                 isOwner={false}
+                isLoggedIn={isAuthenticated} // Pass isAuthenticated as isLoggedIn
                 linkedGist={null}
                 relatedGistDescription={null}
                 relatedGistUrl={null}
-                onToggleStar={isAuthenticated ? () => toggleStar(gist.id) : () => {}}
+                onToggleStar={toggleStar} // Pass toggleStar directly
                 onExpandGist={handleExpandGist}
-                onEditGist={() => {}}
-                onDeleteGist={() => {}}
+                onEditGist={() => {}} // Placeholder for non-owners
+                onDeleteGist={() => {}} // Placeholder for non-owners
               />
             )}
             {isExpanded && (

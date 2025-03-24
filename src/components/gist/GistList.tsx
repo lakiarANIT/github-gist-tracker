@@ -1,4 +1,3 @@
-// src/app/profile/components/GistList.tsx
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Gist, GistGroup } from "src/types/types";
@@ -55,6 +54,7 @@ export default function GistList({
   };
 
   const displayedGists = getPaginatedGists();
+  const isLoggedIn = status === "authenticated"; // Determine login status
 
   if (loadingDetails || loadingStars) {
     return <div className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Loading gists...</div>;
@@ -99,10 +99,11 @@ export default function GistList({
                     isExpanded={isExpanded}
                     isStarred={isStarred}
                     isOwner={isOwner(gist)}
+                    isLoggedIn={isLoggedIn} // Pass authentication status
                     linkedGist={linkedGist}
                     relatedGistDescription={relatedGist?.description}
                     relatedGistUrl={relatedGist?.html_url}
-                    onToggleStar={() => toggleStar(gist.id)}
+                    onToggleStar={toggleStar} // Pass toggleStar directly
                     onExpandGist={handleExpandGist}
                     onEditGist={handleEditGist}
                     onDeleteGist={onDeleteGist}

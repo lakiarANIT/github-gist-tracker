@@ -1,4 +1,3 @@
-// GistCard.tsx
 import { FaHeart, FaComment, FaShare, FaCode, FaEdit, FaTrash, FaStar } from "react-icons/fa";
 import { Gist } from "src/types/types";
 
@@ -8,6 +7,7 @@ interface GistCardProps {
   isExpanded: boolean;
   isStarred: boolean;
   isOwner: boolean;
+  isLoggedIn: boolean; // Added to track authentication status
   linkedGist?: string | null;
   relatedGistDescription?: string | null;
   relatedGistUrl?: string | null;
@@ -23,6 +23,7 @@ export default function GistCard({
   isExpanded,
   isStarred,
   isOwner,
+  isLoggedIn, // Destructured new prop
   linkedGist,
   relatedGistDescription,
   relatedGistUrl,
@@ -32,9 +33,6 @@ export default function GistCard({
   onDeleteGist,
 }: GistCardProps) {
   const firstFile = Object.values(gist.files)[0];
-
-  console.log("GistCard - gist.id:", gist.id, "isOwner:", isOwner, "isExpanded:", isExpanded);
-  console.log("GistCard - should show buttons:", isOwner && !isExpanded);
 
   return (
     <div
@@ -96,9 +94,12 @@ export default function GistCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleStar(gist.id);
+              if (isLoggedIn) onToggleStar(gist.id); // Only toggle if logged in
             }}
-            className={`flex items-center gap-1 ${isStarred ? "text-yellow-500 dark:text-yellow-400" : "hover:text-yellow-500 dark:hover:text-yellow-400"}`}
+            disabled={!isLoggedIn} // Disable button if not logged in
+            className={`flex items-center gap-1 ${
+              isStarred ? "text-yellow-500 dark:text-yellow-400" : "hover:text-yellow-500 dark:hover:text-yellow-400"
+            } ${!isLoggedIn ? "opacity-50 cursor-not-allowed" : ""}`} // Visual feedback for disabled state
           >
             <FaStar className="w-3 h-3 sm:w-4 sm:h-4" /> {isStarred ? "Unstar" : "Star"}
           </button>

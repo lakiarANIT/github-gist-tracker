@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Octokit } from "@octokit/core";
-import { Gist } from "src/types/types";
+import { Gist } from "src/types/types"; 
 
 export function useGistStars(filteredGists: Gist[], octokit?: Octokit | null) {
   const { status } = useSession();
@@ -13,19 +13,23 @@ export function useGistStars(filteredGists: Gist[], octokit?: Octokit | null) {
       if (!octokit || status !== "authenticated" || !filteredGists.length) return;
       setLoadingStars(true);
       try {
-        const starPromises = filteredGists.map((gist) =>
-          octokit
-            .request("GET /gists/{gist_id}/star", {
-              gist_id: gist.id,
-              headers: { "X-GitHub-Api-Version": "2022-11-28" },
-            })
-            .then((response) => ({ gistId: gist.id, isStarred: response.status === 204 }))
-            .catch(() => ({ gistId: gist.id, isStarred: false }))
+        const response = await octokit.request("GET /gists/starred", {
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+          per_page: 100, 
+        });
+
+        const starredGistIds = new Set(
+          (response.data as Gist[]).map((gist) => gist.id)
         );
-        const starResponses = await Promise.all(starPromises);
-        setStarredGists(new Set(starResponses.filter((res) => res.isStarred).map((res) => res.gistId)));
+
+        const relevantStarred = new Set(
+          filteredGists
+            .filter((gist) => starredGistIds.has(gist.id))
+            .map((gist) => gist.id)
+        );
+
+        setStarredGists(relevantStarred);
       } catch (error) {
-        console.error("Error fetching starred status:", error);
       } finally {
         setLoadingStars(false);
       }
@@ -49,7 +53,6 @@ export function useGistStars(filteredGists: Gist[], octokit?: Octokit | null) {
         });
       }
     } catch (error) {
-      console.error("Error toggling star:", error);
       alert("Failed to update star status.");
     }
   };
