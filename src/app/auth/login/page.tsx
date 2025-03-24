@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense } from "react";
-import { useLogin } from "@hooks/auth/useLogin"; 
-import LoginForm from "@components/auth/LoginForm"; 
-import GitHubSignInButton from "@components/auth/GitHubSignInButton"; 
-import LoginContent from "@components/auth/LoginContent"; 
+import { useLogin } from "@hooks/auth/useLogin";
+import LoginForm from "@components/auth/LoginForm";
+import GitHubSignInButton from "@components/auth/GitHubSignInButton";
+import LoginContent from "@components/auth/LoginContent";
 
 export default function LoginPage() {
   const {
@@ -46,3 +46,5 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+
+export const dynamic = "force-dynamic"; 
