@@ -5,15 +5,13 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not(.dark) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
@@ -30,12 +28,10 @@ body {
   @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
 }
 
-/* Ensure full opacity for all elements */
 * {
   @apply opacity-100;
 }
 
-/* Style for input and textarea elements */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -69,28 +65,20 @@ textarea:focus {
   @apply ring-2 ring-offset-2 ring-blue-500 dark:ring-blue-400;
 }
 
-/* Ensure pre blocks have visible text */
-/* pre {
-  -webkit-user-select: text;
-  user-select: text;
-  white-space: pre-wrap;
-} */
-
-/* Force text and background colors for pre blocks */
 pre.bg-gray-100 {
-  background-color: #f3f4f6 !important; /* Tailwind's bg-gray-100 */
+  background-color: #f3f4f6 !important;
 }
 
 pre.dark\:bg-gray-900 {
-  background-color: #111827 !important; /* Tailwind's bg-gray-900 */
+  background-color: #111827 !important;
 }
 
 pre.text-gray-900 {
-  color: #1f2937 !important; /* Tailwind's text-gray-900 */
+  color: #1f2937 !important;
 }
 
 pre.dark\:text-gray-100 {
-  color: #f3f4f6 !important; /* Tailwind's text-gray-100 */
+  color: #f3f4f6 !important;
 }
 
 @media (forced-colors: active) {
