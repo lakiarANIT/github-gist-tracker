@@ -1,4 +1,3 @@
-// File: /app/profile/types.ts
 import { Octokit } from "@octokit/core";
 
 export interface Gist {
@@ -8,29 +7,29 @@ export interface Gist {
   files: {
     [key: string]: {
       filename: string;
-      language: string | null; // Allow null as per API response
+      language: string | null; 
       raw_url: string;
       size: number;
-      content?: string; // Add content, optional since it's not always needed upfront
+      content?: string; 
     };
   };
   created_at: string;
   updated_at: string;
   public: boolean;
   comments: number;
-  forks_url: string; // Add missing field
+  forks_url: string; 
   owner: {
     login: string;
     html_url: string;
     avatar_url?: string;
   };
-  [key: string]: any; // Allow additional properties from API response
+  [key: string]: any; 
 }
 
 export interface GistGroup {
-  id: string; // MongoDB ObjectId as string
+  id: string; 
   name: string;
-  gistIds?: { id: string; githubToken: string | null }[]; // Updated to match API response
+  gistIds?: { id: string; githubToken: string | null }[]; 
   owner: {
     login: string;
   };

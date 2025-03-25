@@ -3,9 +3,9 @@
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
-import LoginForm from "@components/auth/LoginForm"; // Adjust path as needed
-import GitHubSignInButton from "@components/auth/GitHubSignInButton"; // Adjust path as needed
-import LoginContent from "@components/auth/LoginContent"; // Adjust path as needed
+import LoginForm from "@components/auth/LoginForm"; 
+import GitHubSignInButton from "@components/auth/GitHubSignInButton"; 
+import LoginContent from "@components/auth/LoginContent"; 
 
 function LoginComponent() {
   const [email, setEmail] = useState("");
@@ -45,7 +45,6 @@ function LoginComponent() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-start pt-10">
-      {/* Login Form Section - Prominent at the Top */}
       <div className="max-w-md w-full mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           Login to GitHub Gist Tracker
@@ -70,7 +69,6 @@ function LoginComponent() {
         />
       </div>
 
-      {/* Content Section - Pushed Down */}
       <LoginContent />
     </div>
   );

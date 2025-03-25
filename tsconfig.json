@@ -28,6 +28,8 @@
       "@lib/*": ["src/lib/*"],
       "@app/*": ["src/app/*"],
       "@types/*": ["src/types/*"],
+      "@utils/*": ["src/utils/*"],
+      "@context/*": ["src/context/*"],
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts","types/**/*.d.ts"],
