@@ -1,12 +1,11 @@
-// src/components/home/PublicGistList/PublicGistList.tsx
 import { useSession } from "next-auth/react";
 import { Octokit } from "@octokit/core";
-import { Gist, GistGroup } from "src/types/types";
-import { useGistFiltering } from "@hooks/home/publicgistlist/useGistFiltering";
-import { useGistStars } from "@hooks/home/publicgistlist/useGistStars";
-import { useGistPagination } from "@hooks/home/publicgistlist/useGistPagination";
-import GistGrid from "@components/home/publicgistlist/GistGrid";
-import Pagination from "@components/home/publicgistlist/Pagination";
+import { Gist, GistGroup } from "src/types/types"; // Adjust path
+import { useGistFiltering } from "@hooks/home/publicgistlist/useGistFiltering"; // Adjust path
+import { useGistStars } from "@hooks/home/publicgistlist/useGistStars"; // Adjust path
+import { useGistPagination } from "@hooks/home/publicgistlist/useGistPagination"; // Adjust path
+import GistGrid from "@components/home/publicgistlist/GistGrid"; // Adjust path
+import Pagination from "@components/home/publicgistlist/Pagination"; // Adjust path
 
 interface PublicGistListProps {
   gists: Gist[];
