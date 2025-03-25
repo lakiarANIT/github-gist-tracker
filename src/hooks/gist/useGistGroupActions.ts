@@ -11,6 +11,23 @@ export function useGistGroupActions(gistGroups: GistGroup[], setGistGroups: Reac
     setEditGroupName(selectedGroup?.name || "");
   }, [selectedGroupId, gistGroups]);
 
+  // Function to refetch all groups from the server
+  const refetchGroups = async () => {
+    try {
+      const response = await fetch("/api/gist-groups", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch groups");
+      }
+      const data = await response.json();
+      setGistGroups(data.groups || []); // Adjust based on your API response structure
+    } catch (error) {
+      console.error("Error refetching groups:", error);
+    }
+  };
+
   const handleAddGroup = async () => {
     if (!newGroupName.trim()) {
       alert("Please enter a group name.");
@@ -38,6 +55,7 @@ export function useGistGroupActions(gistGroups: GistGroup[], setGistGroups: Reac
         return updatedGroups;
       });
       setNewGroupName("");
+      await refetchGroups(); // Refetch groups to ensure UI is in sync with server
       alert("Group added successfully!");
     } catch (error) {
       console.error("Error adding group:", error);
@@ -73,6 +91,7 @@ export function useGistGroupActions(gistGroups: GistGroup[], setGistGroups: Reac
       setGistGroups((prev) =>
         prev.map((group) => (group.id === selectedGroupId ? updatedGroup : group))
       );
+      await refetchGroups(); // Refetch groups to ensure UI is in sync with server
       alert("Group updated successfully!");
     } catch (error) {
       console.error("Error editing group:", error);
@@ -105,6 +124,7 @@ export function useGistGroupActions(gistGroups: GistGroup[], setGistGroups: Reac
       setGistGroups((prev) => prev.filter((group) => group.id !== selectedGroupId));
       setSelectedGroupId("");
       setEditGroupName("");
+      await refetchGroups(); // Refetch groups to ensure UI is in sync with server
       alert("Group deleted successfully!");
     } catch (error) {
       console.error("Error deleting group:", error);
