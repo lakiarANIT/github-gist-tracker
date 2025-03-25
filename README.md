@@ -7,7 +7,7 @@ GitHub Gist Tracker (GGT) is an advanced tool designed to enhance the way develo
 
 ## Key Features
 - **GitHub Login Integration**: Since all gists are managed by GitHub, users must log in with their GitHub accounts. This ensures secure access to their gists and enables seamless CRUD operations.
-- **Advanced Gist Search & Filtering**: Users can quickly find gists based on keywords, programming languages, and other attributes. Sorting options (Old to New, New to Old) allow for better organization.
+- **Advanced Gist Search & Filtering**: Users can quickly find gists based on keywords, programming languages, and other attributes. Sorting options (Old to New) allow for better organization.So as you add it goes to the end of the list hence you can view one after another
 - **Sort & Open Gists Like Pages**: Users can sort gists by creation date and open each gist in a dedicated page, offering a more structured and distraction-free experience.
 - **Organized Gist Viewing**: Gists are displayed in a more structured layout, making it easier to browse and manage code snippets.
 - **Gist Grouping**: Unlike GitHub’s default gist system, GGT allows users to create and manage groups of related gists, which are stored in MongoDB.
