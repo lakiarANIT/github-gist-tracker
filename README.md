@@ -3,11 +3,12 @@
 # GitHub Gist Tracker (GGT)
 
 ## Overview
-GitHub Gist Tracker (GGT) is an advanced tool designed to enhance the way developers manage, search, and organize their GitHub Gists. Unlike the default GitHub Gist system, GGT offers a structured and feature-rich experience for handling gists more efficiently. 
+GitHub Gist Tracker (GGT) is an advanced tool designed to enhance the way developers manage, search, and organize their GitHub Gists. Unlike the default GitHub Gist system, GGT offers a structured and feature-rich experience for handling gists more efficiently.
 
 ## Key Features
 - **GitHub Login Integration**: Since all gists are managed by GitHub, users must log in with their GitHub accounts. This ensures secure access to their gists and enables seamless CRUD operations.
-- **Advanced Gist Search & Filtering**: Users can quickly find gists based on keywords, programming languages, and other attributes.
+- **Advanced Gist Search & Filtering**: Users can quickly find gists based on keywords, programming languages, and other attributes. Sorting options (Old to New, New to Old) allow for better organization.
+- **Sort & Open Gists Like Pages**: Users can sort gists by creation date and open each gist in a dedicated page, offering a more structured and distraction-free experience.
 - **Organized Gist Viewing**: Gists are displayed in a more structured layout, making it easier to browse and manage code snippets.
 - **Gist Grouping**: Unlike GitHub’s default gist system, GGT allows users to create and manage groups of related gists, which are stored in MongoDB.
 - **CRUD Operations on Gists**: Users can create, update, and delete their gists directly within GGT.
@@ -17,6 +18,7 @@ GitHub Gist Tracker (GGT) is an advanced tool designed to enhance the way develo
 - **Dark & Light Mode**: The site supports both dark and light themes for a comfortable user experience.
 
 GGT enhances GitHub Gist management with improved organization, searchability, and additional features that make working with gists more efficient and intuitive.
+
 
 
 ## Getting Started
