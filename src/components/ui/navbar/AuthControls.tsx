@@ -12,6 +12,10 @@ interface AuthControlsProps {
 export function AuthControls({ session }: AuthControlsProps) {
   const router = useRouter();
 
+  const handleRedirect = () => {
+    router.push("/auth/login");
+  };
+
   const handleSignOut = async () => {
     await signOut({ redirect: false });
     router.push("/");
@@ -33,7 +37,7 @@ export function AuthControls({ session }: AuthControlsProps) {
         </>
       ) : (
         <button
-          onClick={() => signIn("github")}
+          onClick={() => handleRedirect()}
           className="bg-purple-700 dark:bg-purple-800 text-xs sm:text-sm text-white hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-md px-3 sm:px-4 py-1 sm:py-1.5 rounded-full active:scale-95 transition-all duration-300 whitespace-nowrap"
         >
           Sign In with GitHub
