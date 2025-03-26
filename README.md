@@ -19,7 +19,8 @@ GitHub Gist Tracker (GGT) is an advanced tool designed to enhance the way develo
 
 GGT enhances GitHub Gist management with improved organization, searchability, and additional features that make working with gists more efficient and intuitive.
 
-
+## Screens display
+![Profile page](/images/profile.png)
 
 ## Getting Started
 
