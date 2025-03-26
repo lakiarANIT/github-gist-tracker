@@ -21,9 +21,9 @@ GGT enhances GitHub Gist management with improved organization, searchability, a
 
 ## Screens Display
 
-| ![Screen 1](/images/profile.png) | ![Screen 2](/images/managegist.png) | ![Screen 3](/images/addnewgist.png) | ![Screen 4](/images/owngist.png) |
+| ![Screen 1](/images/profile.png) | ![Screen 2](/images/viewgist.png) | ![Screen 3](/images/addnewgist.png) | ![Screen 4](/images/owngist.png) |
 |----------------------------------|----------------------------------|----------------------------------|----------------------------------|
-| ![Screen 5](/images/filtergist.png) | ![Screen 6](/images/managegroupgist.png) | ![Screen 7](/images/viewgist.png) | ![Screen 8](/images/viewdirections.png) |
+| ![Screen 5](/images/filtergist.png) | ![Screen 6](/images/managegroupgist.png) | ![Screen 7](/images/viewdirections.png) | ![Screen 8](/images/location.png) |
 
 
 ## Getting Started
